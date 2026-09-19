@@ -300,7 +300,20 @@ export function getGymExercisesForRoutine(routine: RoutineType): GymExercise[] {
       });
     }
 
-    const exId = p.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    const rawSlug = p.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    // Mapped catalog exercise IDs:
+    // - bench, barbell-bench-press -> bench
+    // - deadlift, conventional-deadlift -> deadlift
+    // - squat, barbell-back-squat -> squat
+    // Unknown slugs still go through normalizeExerciseId (where they default to bench/UUID)
+    let exId = rawSlug;
+    if (rawSlug === 'barbell-bench-press' || rawSlug === 'bench-press' || rawSlug === 'bench') {
+      exId = 'bench';
+    } else if (rawSlug === 'conventional-deadlift' || rawSlug === 'barbell-conventional-deadlift' || rawSlug === 'deadlift') {
+      exId = 'deadlift';
+    } else if (rawSlug === 'barbell-back-squat' || rawSlug === 'squat') {
+      exId = 'squat';
+    }
 
     return {
       id: exId || `ex-${idx}`,

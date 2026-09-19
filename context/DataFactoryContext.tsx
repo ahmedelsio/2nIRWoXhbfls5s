@@ -16,7 +16,7 @@ import {
 import { MOCK_NIGHT_DEBRIEF } from '../data/mockData';
 import { PULL_A_SESSION, LEGS_A_SESSION, CROWDED_PUSH_EXERCISES } from '../data/routinesData';
 import { useAuth } from './AuthContext';
-import { WorkoutRepository } from '../libs/supabase/workout.repository';
+import { WorkoutRepository, normalizeExerciseId } from '../libs/supabase/workout.repository';
 import { isSupabaseConfigured } from '../libs/supabase/client';
 
 // Helper to provide a rich, persona-specific baseline debrief prior to today's active session
@@ -191,7 +191,7 @@ export const DataFactoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
     return {
       ...baseLifter,
-      id: '00000000-0000-0000-0000-000000000001',
+      id: 'guest',
       name: 'Guest Lifter',
       roleTitle: 'OFFLINE MODE • SIGN IN FOR CLOUD SYNC',
       avatarInitials: 'GL',
@@ -259,32 +259,35 @@ export const DataFactoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
     });
 
     // Write to WorkoutRepository outside React render phase
-    const targetEx = activeWorkout[exerciseIndex];
-    if (targetEx && targetEx.sets[setIndex]) {
-      const mergedSet: SetRecord = {
-        ...targetEx.sets[setIndex],
-        ...setFields,
-      };
-      const exerciseId = targetEx.exercise.id || '00000000-0000-0000-0000-000000000002';
-      const targetUserId = user?.id || '00000000-0000-0000-0000-000000000001';
-      setTimeout(() => {
-        WorkoutRepository.logSet({
-          session_id: activeSessionIdRef.current,
-          user_id: targetUserId,
-          exercise_id: exerciseId,
-          set_number: setIndex + 1,
-          set_type: (mergedSet.type as any) || 'working',
-          weight_kg: mergedSet.weightKg,
-          reps: mergedSet.reps,
-          target_reps: mergedSet.targetReps ?? mergedSet.reps,
-          target_weight_kg: mergedSet.weightKg,
-          rir: mergedSet.rir ?? 2,
-          rpe: mergedSet.rpe ?? 8,
-          is_completed: Boolean(mergedSet.completed),
-        }).catch(err => {
-          console.warn('[DataFactory] Error writing set to Supabase:', err);
-        });
-      }, 0);
+    if (user?.id) {
+      const targetEx = activeWorkout[exerciseIndex];
+      if (targetEx && targetEx.sets[setIndex]) {
+        const mergedSet: SetRecord = {
+          ...targetEx.sets[setIndex],
+          ...setFields,
+        };
+        const rawExerciseId = targetEx.exercise.id || targetEx.exercise.name || '';
+        const exerciseId = normalizeExerciseId(rawExerciseId);
+        const targetUserId = user.id;
+        setTimeout(() => {
+          WorkoutRepository.logSet({
+            session_id: activeSessionIdRef.current,
+            user_id: targetUserId,
+            exercise_id: exerciseId,
+            set_number: setIndex + 1,
+            set_type: (mergedSet.type as any) || 'working',
+            weight_kg: mergedSet.weightKg,
+            reps: mergedSet.reps,
+            target_reps: mergedSet.targetReps ?? mergedSet.reps,
+            target_weight_kg: mergedSet.weightKg,
+            rir: mergedSet.rir ?? 2,
+            rpe: mergedSet.rpe ?? 8,
+            is_completed: Boolean(mergedSet.completed),
+          }).catch(err => {
+            console.warn('[DataFactory] Error writing set to Supabase:', err);
+          });
+        }, 0);
+      }
     }
 
     // Mark as locally queued in offline sync
@@ -389,25 +392,27 @@ export const DataFactoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
     });
 
     // Write all sets asynchronously outside React render
-    setTimeout(() => {
-      const targetUserId = user?.id || '00000000-0000-0000-0000-000000000001';
-      for (const item of setsToPersist) {
-        WorkoutRepository.logSet({
-          session_id: activeSessionIdRef.current,
-          user_id: targetUserId,
-          exercise_id: item.exerciseId,
-          set_number: item.setNumber,
-          set_type: (item.filled.type as any) || 'working',
-          weight_kg: item.filled.weightKg,
-          reps: item.filled.reps,
-          target_reps: item.filled.targetReps ?? item.filled.reps,
-          target_weight_kg: item.filled.weightKg,
-          rir: item.filled.rir,
-          rpe: item.filled.rpe,
-          is_completed: true,
-        }).catch(() => {});
-      }
-    }, 0);
+    if (user?.id) {
+      const targetUserId = user.id;
+      setTimeout(() => {
+        for (const item of setsToPersist) {
+          WorkoutRepository.logSet({
+            session_id: activeSessionIdRef.current,
+            user_id: targetUserId,
+            exercise_id: normalizeExerciseId(item.exerciseId),
+            set_number: item.setNumber,
+            set_type: (item.filled.type as any) || 'working',
+            weight_kg: item.filled.weightKg,
+            reps: item.filled.reps,
+            target_reps: item.filled.targetReps ?? item.filled.reps,
+            target_weight_kg: item.filled.weightKg,
+            rir: item.filled.rir,
+            rpe: item.filled.rpe,
+            is_completed: true,
+          }).catch(() => {});
+        }
+      }, 0);
+    }
   };
 
   // Load custom routine (e.g. from Schedule Modal or Routine Swapper)
@@ -463,12 +468,17 @@ export const DataFactoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
     setHistory(prev => [newHistoryRecord, ...prev]);
 
+    if (!user?.id) {
+      // Prepare a new session ID for next workout
+      activeSessionIdRef.current = generateSessionId();
+      return debrief;
+    }
+
     // Persist completed session to LocalStore and sync queue
-    const targetUserId = user?.id || '00000000-0000-0000-0000-000000000001';
     const sessionId = activeSessionIdRef.current;
     WorkoutRepository.createSession({
       id: sessionId,
-      user_id: targetUserId,
+      user_id: user.id,
       name: debrief.workoutName,
       status: 'completed',
       started_at: new Date(Date.now() - durationMinutes * 60 * 1000).toISOString(),
@@ -477,6 +487,29 @@ export const DataFactoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
       notes: debrief.gradeReason,
     }).then(() => {
       return WorkoutRepository.completeSession(sessionId, durationMinutes, debrief.gradeReason);
+    }).then(() => {
+      for (const item of activeWorkout) {
+        const rawExerciseId = item.exercise.id || item.exercise.name || '';
+        const normalizedExId = normalizeExerciseId(rawExerciseId);
+        item.sets.forEach((set, idx) => {
+          if (set.completed) {
+            WorkoutRepository.logSet({
+              session_id: sessionId,
+              user_id: user.id,
+              exercise_id: normalizedExId,
+              set_number: set.setNumber || idx + 1,
+              set_type: (set.type as any) || 'working',
+              weight_kg: set.weightKg,
+              reps: set.reps,
+              rir: typeof set.rir === 'number' ? Math.round(set.rir) : 2,
+              rpe: typeof set.rpe === 'number' ? set.rpe : (typeof set.rir === 'number' ? 10 - set.rir : 8),
+              is_completed: true,
+            }).catch(err => {
+              console.warn('[DataFactory] Error logging set on finish:', err);
+            });
+          }
+        });
+      }
     }).catch(err => {
       console.warn('[DataFactory] Error persisting completed session to Supabase:', err);
     });
