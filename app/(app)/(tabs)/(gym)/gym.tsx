@@ -87,18 +87,18 @@ export default function GymModeScreen() {
     finishActiveWorkout
   } = useDataFactory();
 
-  // Initialize local exercises from context if available, fallback to defaults
+  // Initialize local exercises from context if available, fallback to empty array
   const [exercises, setExercises] = useState<GymExercise[]>(() => {
     if (activeWorkout && activeWorkout.length > 0) {
       return workoutToGym(activeWorkout);
     }
-    return DEFAULT_EXERCISES;
+    return [];
   });
 
   const loadedWorkoutKeyRef = useRef<string>(
     activeWorkout && activeWorkout.length > 0
       ? `${activeBriefing?.workoutName || ''}-${activeWorkout.map((w) => w.exercise.name).join(',')}`
-      : 'default'
+      : ''
   );
 
   useEffect(() => {
@@ -130,7 +130,7 @@ export default function GymModeScreen() {
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [justCompletedSetId, setJustCompletedSetId] = useState<string | null>(null);
 
-  const currentExercise = exercises[currentExIndex] || exercises[0];
+  const currentExercise = exercises[currentExIndex] || exercises[0] || DEFAULT_EXERCISES[0];
   const safeSetIdx = Math.min(activeSetIndex, Math.max(0, currentExercise.sets.length - 1));
   const activeSet = currentExercise.sets[safeSetIdx] || currentExercise.sets[0];
 
@@ -411,6 +411,29 @@ export default function GymModeScreen() {
   const sleevePlates: number[] = platesUsed.flatMap((p) =>
     Array.from({ length: p.count }, () => p.weight)
   );
+
+  if (exercises.length === 0) {
+    return (
+      <>
+        <Stack.Screen options={{
+          header: () => (
+            <View style={[styles.topBar, { paddingTop: insets.top }]}>
+              <MaskedGlassBG />
+              <View>
+                <Text style={styles.subtext}>GYM FLOOR MODE</Text>
+                <Text style={styles.workoutTitle}>No Active Session</Text>
+              </View>
+            </View>
+          )
+        }} />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, backgroundColor: '#09090b' }}>
+          <Text style={{ color: '#a1a1aa', fontSize: 16, textAlign: 'center', lineHeight: 24 }}>
+            No session loaded. Start Gym Mode from the Today tab.
+          </Text>
+        </View>
+      </>
+    );
+  }
 
   return (
     <>
