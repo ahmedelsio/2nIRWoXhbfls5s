@@ -169,31 +169,34 @@ export default function GymModeScreen() {
   // Adjust Weight in Stepper
   const handleAdjustWeight = (delta: number) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const targetSet = currentExercise.sets[safeSetIdx];
+    const currentWeight = targetSet ? targetSet.weight : 0;
+    const newWeight = Math.max(0, Number((currentWeight + delta).toFixed(2)));
+
     setExercises((prev) => {
       const updated = [...prev];
       const targetEx = { ...updated[currentExIndex] };
       const updatedSets = [...targetEx.sets];
       const current = updatedSets[safeSetIdx];
-      const newWeight = Math.max(0, Number((current.weight + delta).toFixed(2)));
       updatedSets[safeSetIdx] = {
         ...current,
         weight: newWeight,
       };
       targetEx.sets = updatedSets;
       updated[currentExIndex] = targetEx;
-
-      // Sync to Context
-      try {
-        updateActiveWorkoutSet(currentExIndex, safeSetIdx, { weightKg: newWeight });
-      } catch { }
-
       return updated;
     });
+
+    // Sync to Context
+    try {
+      updateActiveWorkoutSet(currentExIndex, safeSetIdx, { weightKg: newWeight });
+    } catch { }
   };
 
   // Direct Weight Application (from Plates or Presets)
   const handleApplyWeightDirectly = (newWeight: number) => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    const formattedWeight = Number(newWeight.toFixed(2));
     setExercises((prev) => {
       const updated = [...prev];
       const targetEx = { ...updated[currentExIndex] };
@@ -201,41 +204,42 @@ export default function GymModeScreen() {
       const current = updatedSets[safeSetIdx];
       updatedSets[safeSetIdx] = {
         ...current,
-        weight: Number(newWeight.toFixed(2)),
+        weight: formattedWeight,
       };
       targetEx.sets = updatedSets;
       updated[currentExIndex] = targetEx;
-
-      try {
-        updateActiveWorkoutSet(currentExIndex, safeSetIdx, { weightKg: newWeight });
-      } catch { }
-
       return updated;
     });
+
+    try {
+      updateActiveWorkoutSet(currentExIndex, safeSetIdx, { weightKg: formattedWeight });
+    } catch { }
   };
 
   // Adjust Reps in Stepper
   const handleAdjustReps = (delta: number) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const targetSet = currentExercise.sets[safeSetIdx];
+    const currentReps = targetSet ? targetSet.reps : 1;
+    const newReps = Math.max(1, currentReps + delta);
+
     setExercises((prev) => {
       const updated = [...prev];
       const targetEx = { ...updated[currentExIndex] };
       const updatedSets = [...targetEx.sets];
       const current = updatedSets[safeSetIdx];
-      const newReps = Math.max(1, current.reps + delta);
       updatedSets[safeSetIdx] = {
         ...current,
         reps: newReps,
       };
       targetEx.sets = updatedSets;
       updated[currentExIndex] = targetEx;
-
-      try {
-        updateActiveWorkoutSet(currentExIndex, safeSetIdx, { reps: newReps });
-      } catch { }
-
       return updated;
     });
+
+    try {
+      updateActiveWorkoutSet(currentExIndex, safeSetIdx, { reps: newReps });
+    } catch { }
   };
 
   // Set RIR in Stepper
@@ -252,13 +256,12 @@ export default function GymModeScreen() {
       };
       targetEx.sets = updatedSets;
       updated[currentExIndex] = targetEx;
-
-      try {
-        updateActiveWorkoutSet(currentExIndex, safeSetIdx, { rir, rpe: 10 - rir });
-      } catch { }
-
       return updated;
     });
+
+    try {
+      updateActiveWorkoutSet(currentExIndex, safeSetIdx, { rir, rpe: 10 - rir });
+    } catch { }
   };
 
   // 1-Tap Toggle Set Completed Status (Direct from table row checkmark)
@@ -290,18 +293,17 @@ export default function GymModeScreen() {
       };
       targetEx.sets = updatedSets;
       updated[currentExIndex] = targetEx;
-
-      try {
-        updateActiveWorkoutSet(currentExIndex, setIdx, {
-          completed: isNowCompleted,
-          weightKg: updatedSets[setIdx].weight,
-          reps: updatedSets[setIdx].reps,
-          rir: updatedSets[setIdx].rir,
-        });
-      } catch { }
-
       return updated;
     });
+
+    try {
+      updateActiveWorkoutSet(currentExIndex, setIdx, {
+        completed: isNowCompleted,
+        weightKg: targetSet.weight,
+        reps: targetSet.reps,
+        rir: targetSet.rir,
+      });
+    } catch { }
 
     // Advance focus to next uncompleted set
     if (isNowCompleted) {
