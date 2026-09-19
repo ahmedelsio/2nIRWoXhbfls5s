@@ -82,10 +82,14 @@ export default function GymModeScreen() {
     activeSessionId,
     activeWorkout,
     activeBriefing,
+    isSessionActive,
+    latestDebrief,
+    liveStats,
+    loadCustomRoutine,
     updateActiveWorkoutSet,
     addSetToExercise,
     removeSetFromExercise,
-    finishActiveWorkout
+    finishActiveWorkout,
   } = useDataFactory();
 
   // Initialize local exercises from context if available, fallback to empty array
@@ -105,6 +109,7 @@ export default function GymModeScreen() {
   const sessionStartedAtRef = useRef<number>(Date.now());
 
   useEffect(() => {
+    if (!isSessionActive) return;
     if (activeWorkout && activeWorkout.length > 0) {
       const reloadKey = `${activeSessionId}|${activeBriefing?.workoutName || ''}|${exerciseNames}`;
       if (loadedWorkoutKeyRef.current !== reloadKey) {
@@ -417,7 +422,8 @@ export default function GymModeScreen() {
     Array.from({ length: p.count }, () => p.weight)
   );
 
-  if (exercises.length === 0) {
+  if (!isSessionActive) {
+    const finished = latestDebrief;
     return (
       <>
         <Stack.Screen options={{
@@ -426,15 +432,42 @@ export default function GymModeScreen() {
               <MaskedGlassBG />
               <View>
                 <Text style={styles.subtext}>GYM FLOOR MODE</Text>
-                <Text style={styles.workoutTitle}>No Active Session</Text>
+                <Text style={styles.workoutTitle}>
+                  {finished ? 'Session closed' : 'No active session'}
+                </Text>
               </View>
             </View>
-          )
+          ),
         }} />
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, backgroundColor: '#09090b' }}>
-          <Text style={{ color: '#a1a1aa', fontSize: 16, textAlign: 'center', lineHeight: 24 }}>
-            No session loaded. Start Gym Mode from the Today tab.
-          </Text>
+        <View style={{ flex: 1, justifyContent: 'center', padding: 24, backgroundColor: '#09090b' }}>
+          {finished ? (
+            <>
+              <Text style={{ color: '#fff', fontSize: 20, fontWeight: '800', marginBottom: 8 }}>
+                {finished.workoutName}
+              </Text>
+              <Text style={{ color: '#a1a1aa', marginBottom: 20 }}>
+                {finished.setsCompleted} sets · {finished.totalVolumeKg.toLocaleString()} kg · {finished.durationMinutes} min
+              </Text>
+              <TouchableOpacity
+                onPress={() => router.push('/(app)/(tabs)/(debrief)/debrief' as Href)}
+                style={{ backgroundColor: '#27272a', padding: 16, borderRadius: 14, marginBottom: 12 }}
+              >
+                <Text style={{ color: '#fff', fontWeight: '700', textAlign: 'center' }}>Open Debrief</Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <Text style={{ color: '#a1a1aa', fontSize: 16, textAlign: 'center', marginBottom: 20 }}>
+              Start from Today to open the floor logger.
+            </Text>
+          )}
+          <TouchableOpacity
+            onPress={() => router.push('/(app)/(tabs)/(today)' as Href)}
+            style={{ backgroundColor: '#ccff00', padding: 16, borderRadius: 14 }}
+          >
+            <Text style={{ color: '#09090b', fontWeight: '800', textAlign: 'center' }}>
+              {finished ? 'Start another from Today' : 'Go to Today'}
+            </Text>
+          </TouchableOpacity>
         </View>
       </>
     );

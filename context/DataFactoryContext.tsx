@@ -103,6 +103,7 @@ interface DataFactoryContextType {
   activePersona: LifterPersona;
   activeWorkout: WorkoutExercise[];
   activeBriefing: MorningBriefingData;
+  isSessionActive: boolean;
   activeSessionId: string;
   history: HistoricalWorkout[];
   knownPRs: Record<string, { weightKg: number; reps: number; e1RM: number; date: string }>;
@@ -150,6 +151,7 @@ export const DataFactoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
     });
   };
 
+  const [isSessionActive, setIsSessionActive] = useState(false);
   const [activeSessionId, setActiveSessionId] = useState<string>(() => generateSessionId());
   const activeSessionIdRef = useRef<string>(activeSessionId);
   activeSessionIdRef.current = activeSessionId;
@@ -399,6 +401,7 @@ export const DataFactoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const newSessionId = generateSessionId();
     activeSessionIdRef.current = newSessionId;
     setActiveSessionId(newSessionId);
+    setIsSessionActive(true);
 
     if (!user?.id) return;
     WorkoutRepository.createSession({
@@ -488,6 +491,7 @@ export const DataFactoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
     setSqliteSyncStatus('syncing');
     setTimeout(() => setSqliteSyncStatus('synced'), 600);
+    setIsSessionActive(false);
     return debrief;
   };
 
@@ -555,6 +559,7 @@ export const DataFactoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
         activeWorkout,
         activeBriefing,
         activeSessionId,
+        isSessionActive,
         history,
         knownPRs,
         latestDebrief,
