@@ -10,42 +10,228 @@ type WorkoutSession = Database['public']['Tables']['sessions']['Row'];
 type WorkoutSet = Database['public']['Tables']['sets']['Row'];
 
 const EXERCISE_SLUG_MAP: Record<string, string> = {
-  'bench': '00000000-0000-0000-0000-000000000002',
-  'bench-press': '00000000-0000-0000-0000-000000000002',
-  'barbell-bench-press': '00000000-0000-0000-0000-000000000002',
-  'barbell-flat-bench-press': '00000000-0000-0000-0000-000000000002',
-  'incline-db': '00000000-0000-0000-0000-000000000008',
-  'incline-db-press': '00000000-0000-0000-0000-000000000008',
-  'incline-dumbbell-press': '00000000-0000-0000-0000-000000000008',
-  'standing-overhead-press': '00000000-0000-0000-0000-000000000004',
-  'overhead-barbell-press': '00000000-0000-0000-0000-000000000004',
-  'ohp': '00000000-0000-0000-0000-000000000004',
-  'cable-lateral-raise': '00000000-0000-0000-0000-000000000009',
-  'lat-raise': '00000000-0000-0000-0000-000000000009',
-  'tricep-pushdown': '00000000-0000-0000-0000-000000000010',
-  'cable-tricep-pushdown': '00000000-0000-0000-0000-000000000010',
-  'triceps-ext': '00000000-0000-0000-0000-000000000010',
+  // 0001: Barbell Back Squat
   'barbell-back-squat': '00000000-0000-0000-0000-000000000001',
   'squat': '00000000-0000-0000-0000-000000000001',
+  'back-squat': '00000000-0000-0000-0000-000000000001',
+  'barbell-squat': '00000000-0000-0000-0000-000000000001',
+
+  // 0002: Barbell Flat Bench Press
+  'barbell-flat-bench-press': '00000000-0000-0000-0000-000000000002',
+  'barbell-bench-press': '00000000-0000-0000-0000-000000000002',
+  'bench-press': '00000000-0000-0000-0000-000000000002',
+  'bench': '00000000-0000-0000-0000-000000000002',
+  'flat-bench': '00000000-0000-0000-0000-000000000002',
+  'flat-bench-press': '00000000-0000-0000-0000-000000000002',
+
+  // 0003: Barbell Conventional Deadlift
   'barbell-conventional-deadlift': '00000000-0000-0000-0000-000000000003',
+  'conventional-deadlift': '00000000-0000-0000-0000-000000000003',
   'barbell-deadlift': '00000000-0000-0000-0000-000000000003',
   'deadlift': '00000000-0000-0000-0000-000000000003',
-  'conventional-deadlift': '00000000-0000-0000-0000-000000000003',
+
+  // 0004: Standing Overhead Press
+  'standing-overhead-press': '00000000-0000-0000-0000-000000000004',
+  'overhead-barbell-press': '00000000-0000-0000-0000-000000000004',
+  'overhead-press': '00000000-0000-0000-0000-000000000004',
+  'ohp': '00000000-0000-0000-0000-000000000004',
+  'barbell-ohp': '00000000-0000-0000-0000-000000000004',
+
+  // 0005: Barbell Bent-Over Row
   'barbell-bent-over-row': '00000000-0000-0000-0000-000000000005',
   'barbell-row': '00000000-0000-0000-0000-000000000005',
+  'bent-over-row': '00000000-0000-0000-0000-000000000005',
   'row': '00000000-0000-0000-0000-000000000005',
+
+  // 0006: Romanian Deadlift
   'romanian-deadlift': '00000000-0000-0000-0000-000000000006',
-  'pull-up-bodyweight': '00000000-0000-0000-0000-000000000007',
+  'romanian-deadlift-rdl': '00000000-0000-0000-0000-000000000006',
+  'rdl': '00000000-0000-0000-0000-000000000006',
+  'barbell-rdl': '00000000-0000-0000-0000-000000000006',
+
+  // 0007: Pull-Up
+  'pull-up': '00000000-0000-0000-0000-000000000007',
   'pull-ups': '00000000-0000-0000-0000-000000000007',
-  'lat-pulldown': '00000000-0000-0000-0000-000000000020',
+  'pull-up-bodyweight': '00000000-0000-0000-0000-000000000007',
+  'pullup': '00000000-0000-0000-0000-000000000007',
+  'pullups': '00000000-0000-0000-0000-000000000007',
+  'chin-up': '00000000-0000-0000-0000-000000000007',
+
+  // 0008: Incline Dumbbell Press
+  'incline-dumbbell-press': '00000000-0000-0000-0000-000000000008',
+  'incline-db-press': '00000000-0000-0000-0000-000000000008',
+  'incline-db': '00000000-0000-0000-0000-000000000008',
+  'incline-dumbbell-bench-press': '00000000-0000-0000-0000-000000000008',
+
+  // 0009: Cable Lateral Raise
+  'cable-lateral-raise': '00000000-0000-0000-0000-000000000009',
+  'lat-raise': '00000000-0000-0000-0000-000000000009',
+  'cable-lat-raise': '00000000-0000-0000-0000-000000000009',
+  'cable-lateral': '00000000-0000-0000-0000-000000000009',
+
+  // 0010: Cable Tricep Pushdown
+  'cable-tricep-pushdown': '00000000-0000-0000-0000-000000000010',
+  'tricep-pushdown': '00000000-0000-0000-0000-000000000010',
+  'pushdown': '00000000-0000-0000-0000-000000000010',
+  'cable-pushdown': '00000000-0000-0000-0000-000000000010',
+
+  // 0011: 45-Degree Leg Press (separate from 0012)
+  '45-degree-leg-press': '00000000-0000-0000-0000-000000000011',
   'leg-press': '00000000-0000-0000-0000-000000000011',
-  'calf-raise': '00000000-0000-0000-0000-000000000011',
+  'leg-press-45': '00000000-0000-0000-0000-000000000011',
+  'sled-leg-press': '00000000-0000-0000-0000-000000000011',
+
+  // 0012: Standing Calf Raise (fixed bug: separate from 0011)
+  'standing-calf-raise': '00000000-0000-0000-0000-000000000012',
+  'calf-raise': '00000000-0000-0000-0000-000000000012',
+  'calf-raises': '00000000-0000-0000-0000-000000000012',
+  'standing-calf-raises': '00000000-0000-0000-0000-000000000012',
+
+  // 0013: Barbell Front Squat
+  'barbell-front-squat': '00000000-0000-0000-0000-000000000013',
+  'front-squat': '00000000-0000-0000-0000-000000000013',
+
+  // 0014: Trap-Bar Deadlift
+  'trap-bar-deadlift': '00000000-0000-0000-0000-000000000014',
+  'trap-bar-dl': '00000000-0000-0000-0000-000000000014',
+  'hex-bar-deadlift': '00000000-0000-0000-0000-000000000014',
+
+  // 0015: Incline Barbell Bench Press
+  'incline-barbell-bench-press': '00000000-0000-0000-0000-000000000015',
+  'incline-bb': '00000000-0000-0000-0000-000000000015',
+  'incline-barbell-press': '00000000-0000-0000-0000-000000000015',
+  'incline-bench': '00000000-0000-0000-0000-000000000015',
+
+  // 0016: Dumbbell Flat Press
+  'dumbbell-flat-press': '00000000-0000-0000-0000-000000000016',
+  'db-flat-press': '00000000-0000-0000-0000-000000000016',
+  'flat-dumbbell-press': '00000000-0000-0000-0000-000000000016',
+  'dumbbell-bench-press': '00000000-0000-0000-0000-000000000016',
+
+  // 0017: Push-Up
+  'push-up': '00000000-0000-0000-0000-000000000017',
+  'pushup': '00000000-0000-0000-0000-000000000017',
+  'push-ups': '00000000-0000-0000-0000-000000000017',
+  'pushups': '00000000-0000-0000-0000-000000000017',
+
+  // 0018: Chest-Supported Row
+  'chest-supported-row': '00000000-0000-0000-0000-000000000018',
+  'chest-supported-db-row': '00000000-0000-0000-0000-000000000018',
+  'chest-supported-dumbbell-row': '00000000-0000-0000-0000-000000000018',
+
+  // 0019: Seated Cable Row
+  'seated-cable-row': '00000000-0000-0000-0000-000000000019',
+  'cable-row': '00000000-0000-0000-0000-000000000019',
+  'seated-row': '00000000-0000-0000-0000-000000000019',
+
+  // 0020: Lat Pulldown (existing id 0020 kept)
+  'lat-pulldown': '00000000-0000-0000-0000-000000000020',
+  'neutral-lat-pulldown': '00000000-0000-0000-0000-000000000020',
+  'pulldown': '00000000-0000-0000-0000-000000000020',
+  'cable-lat-pulldown': '00000000-0000-0000-0000-000000000020',
+
+  // 0021: Cable Face Pull
+  'cable-face-pull': '00000000-0000-0000-0000-000000000021',
+  'face-pull': '00000000-0000-0000-0000-000000000021',
+  'face-pulls': '00000000-0000-0000-0000-000000000021',
+  'facepull': '00000000-0000-0000-0000-000000000021',
+
+  // 0022: Dumbbell Lateral Raise
+  'dumbbell-lateral-raise': '00000000-0000-0000-0000-000000000022',
+  'db-lateral-raise': '00000000-0000-0000-0000-000000000022',
+  'standing-db-lateral-raise': '00000000-0000-0000-0000-000000000022',
+  'db-lat-raise': '00000000-0000-0000-0000-000000000022',
+
+  // 0023: Rear Delt Fly
+  'rear-delt-fly': '00000000-0000-0000-0000-000000000023',
+  'rear-delt-reverse-fly': '00000000-0000-0000-0000-000000000023',
+  'dumbbell-rear-delt-fly': '00000000-0000-0000-0000-000000000023',
+  'reverse-fly': '00000000-0000-0000-0000-000000000023',
+
+  // 0024: Overhead Cable Triceps Extension
+  'overhead-cable-triceps-extension': '00000000-0000-0000-0000-000000000024',
+  'overhead-cable-triceps': '00000000-0000-0000-0000-000000000024',
+  'overhead-triceps-extension': '00000000-0000-0000-0000-000000000024',
+  'triceps-ext': '00000000-0000-0000-0000-000000000024',
+  'cable-overhead-triceps-ext': '00000000-0000-0000-0000-000000000024',
+
+  // 0025: Barbell Skull Crusher
+  'barbell-skull-crusher': '00000000-0000-0000-0000-000000000025',
+  'skull-crusher': '00000000-0000-0000-0000-000000000025',
+  'skullcrusher': '00000000-0000-0000-0000-000000000025',
+  'ez-bar-skull-crusher': '00000000-0000-0000-0000-000000000025',
+  'skull-crushers': '00000000-0000-0000-0000-000000000025',
+
+  // 0026: Incline Dumbbell Curl
+  'incline-dumbbell-curl': '00000000-0000-0000-0000-000000000026',
+  'incline-curl': '00000000-0000-0000-0000-000000000026',
+  'incline-db-curl': '00000000-0000-0000-0000-000000000026',
+
+  // 0027: Dumbbell Hammer Curl
+  'dumbbell-hammer-curl': '00000000-0000-0000-0000-000000000027',
+  'hammer-curl': '00000000-0000-0000-0000-000000000027',
+  'db-hammer-curl': '00000000-0000-0000-0000-000000000027',
+
+  // 0028: Bulgarian Split Squat
+  'bulgarian-split-squat': '00000000-0000-0000-0000-000000000028',
+  'split-squat': '00000000-0000-0000-0000-000000000028',
+  'bss': '00000000-0000-0000-0000-000000000028',
+
+  // 0029: Seated Leg Curl
+  'seated-leg-curl': '00000000-0000-0000-0000-000000000029',
+  'leg-curl': '00000000-0000-0000-0000-000000000029',
+  'seated-hamstring-curl': '00000000-0000-0000-0000-000000000029',
+
+  // 0030: Leg Extension
+  'leg-extension': '00000000-0000-0000-0000-000000000030',
+  'quad-extension': '00000000-0000-0000-0000-000000000030',
+  'machine-leg-extension': '00000000-0000-0000-0000-000000000030',
+
+  // 0031: Dumbbell Walking Lunge
+  'dumbbell-walking-lunge': '00000000-0000-0000-0000-000000000031',
+  'walking-lunge': '00000000-0000-0000-0000-000000000031',
+  'walking-lunges': '00000000-0000-0000-0000-000000000031',
+  'lunges': '00000000-0000-0000-0000-000000000031',
+
+  // 0032: Incline DB Crush Press
+  'incline-dumbbell-crush-press': '00000000-0000-0000-0000-000000000032',
+  'incline-db-crush-press': '00000000-0000-0000-0000-000000000032',
+  'crush-press': '00000000-0000-0000-0000-000000000032',
+
+  // 0033: Overhead DB Triceps Ext
+  'overhead-dumbbell-triceps-extension': '00000000-0000-0000-0000-000000000033',
+  'overhead-db-triceps-ext': '00000000-0000-0000-0000-000000000033',
+  'db-overhead-triceps': '00000000-0000-0000-0000-000000000033',
+
+  // 0034: 90/90 Hip Flow
+  '90-90-hip-flow': '00000000-0000-0000-0000-000000000034',
+  '90-90-hip-internal-external-flow': '00000000-0000-0000-0000-000000000034',
+  '90-90-hip-internal-external': '00000000-0000-0000-0000-000000000034',
+
+  // 0035: Thoracic Spine Foam Roller Opener
+  'thoracic-spine-foam-roller-opener': '00000000-0000-0000-0000-000000000035',
+  'thoracic-extension-foam-roller': '00000000-0000-0000-0000-000000000035',
+  'thoracic-spine-foam-roller': '00000000-0000-0000-0000-000000000035',
+
+  // 0036: Couch Stretch
+  'couch-stretch': '00000000-0000-0000-0000-000000000036',
+  'couch-stretch-hip-flexors': '00000000-0000-0000-0000-000000000036',
+
+  // 0037: Banded Ankle Mobilization
+  'banded-ankle-mobilization': '00000000-0000-0000-0000-000000000037',
+  'banded-ankle-mobility': '00000000-0000-0000-0000-000000000037',
 };
 
 export function normalizeExerciseId(rawId: string): string {
   const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawId);
   if (isUUID) return rawId;
-  return EXERCISE_SLUG_MAP[rawId.toLowerCase()] || '00000000-0000-0000-0000-000000000002';
+
+  const slug = rawId.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  const mapped = EXERCISE_SLUG_MAP[slug] || EXERCISE_SLUG_MAP[rawId.toLowerCase().trim()];
+  if (mapped) return mapped;
+
+  console.warn(`[WorkoutRepository] Unknown exercise slug "${rawId}" (slugified: "${slug}"). Defaulting to bench as fallback.`);
+  return '00000000-0000-0000-0000-000000000002';
 }
 
 function generateUUID(): string {
@@ -273,17 +459,13 @@ export const WorkoutRepository = {
       name: validated.name,
       status: validated.status,
       started_at: validated.started_at || now,
-      ended_at: null,
       completed_at: null,
-      duration_seconds: null,
-      duration_minutes: null,
-      total_tonnage_kg: 0,
+      duration_minutes: 0,
       total_volume_kg: 0,
       total_sets_completed: 0,
       session_grade: null,
       grade_reason: null,
-      readiness_score_at_start: null,
-      readiness_score: null,
+      readiness_score: 85,
       is_timeboxed: validated.is_timeboxed,
       is_crowded_gym_mode: validated.is_crowded_gym_mode,
       notes: validated.notes ?? null,
@@ -303,7 +485,9 @@ export const WorkoutRepository = {
       retryCount: 0,
     });
 
-    syncOfflineQueue().catch(() => {});
+    if (isSupabaseConfigured && onlineManager.isOnline()) {
+      await syncOfflineQueue().catch(() => {});
+    }
 
     return session;
   },
@@ -325,13 +509,12 @@ export const WorkoutRepository = {
     const sessions = LocalStore.getSessions();
     const session = sessions.find((s) => s.id === sessionId);
 
-    const completedFields = {
+    const remoteUpdateFields = {
       status: 'completed' as const,
       completed_at: now,
       duration_minutes: durationMinutes,
       notes: notes ?? (session ? session.notes : null),
       total_volume_kg: extra?.total_volume_kg ?? (session?.total_volume_kg ?? 0),
-      total_tonnage_kg: extra?.total_volume_kg != null ? Number((extra.total_volume_kg / 1000).toFixed(2)) : (session?.total_tonnage_kg ?? 0),
       total_sets_completed: extra?.total_sets_completed ?? (session?.total_sets_completed ?? 0),
       session_grade: extra?.session_grade !== undefined ? mapToSessionGrade(extra.session_grade) : (session?.session_grade ?? null),
       updated_at: now,
@@ -340,7 +523,8 @@ export const WorkoutRepository = {
     if (session) {
       const completed: WorkoutSession = {
         ...session,
-        ...completedFields,
+        ...remoteUpdateFields,
+        total_tonnage_kg: extra?.total_volume_kg != null ? Number((extra.total_volume_kg / 1000).toFixed(2)) : (session?.total_tonnage_kg ?? 0),
       };
       LocalStore.saveSession(completed);
     }
@@ -351,7 +535,7 @@ export const WorkoutRepository = {
       table: 'sessions',
       payload: {
         id: sessionId,
-        ...completedFields,
+        ...remoteUpdateFields,
       },
       clientTimestamp: now,
       status: 'pending',
@@ -361,7 +545,7 @@ export const WorkoutRepository = {
     if (isSupabaseConfigured && onlineManager.isOnline()) {
       try {
         await (supabase.from('sessions') as any)
-          .update(completedFields)
+          .update(remoteUpdateFields)
           .eq('id', sessionId);
       } catch (err) {
         console.warn('[WorkoutRepository] Error updating completed session in Supabase:', err);

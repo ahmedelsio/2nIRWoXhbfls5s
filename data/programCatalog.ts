@@ -301,11 +301,6 @@ export function getGymExercisesForRoutine(routine: RoutineType): GymExercise[] {
     }
 
     const rawSlug = p.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-    // Mapped catalog exercise IDs:
-    // - bench, barbell-bench-press -> bench
-    // - deadlift, conventional-deadlift -> deadlift
-    // - squat, barbell-back-squat -> squat
-    // Unknown slugs still go through normalizeExerciseId (where they default to bench/UUID)
     let exId = rawSlug;
     if (rawSlug === 'barbell-bench-press' || rawSlug === 'bench-press' || rawSlug === 'bench') {
       exId = 'bench';
@@ -313,6 +308,32 @@ export function getGymExercisesForRoutine(routine: RoutineType): GymExercise[] {
       exId = 'deadlift';
     } else if (rawSlug === 'barbell-back-squat' || rawSlug === 'squat') {
       exId = 'squat';
+    } else if (rawSlug === 'incline-dumbbell-press' || rawSlug === 'incline-db-press') {
+      exId = 'incline-db';
+    } else if (rawSlug === 'cable-lateral-raise') {
+      exId = 'lat-raise';
+    } else if (rawSlug === 'overhead-triceps-extension' || rawSlug === 'overhead-cable-triceps-extension') {
+      exId = 'triceps-ext';
+    } else if (rawSlug === 'standing-calf-raise') {
+      exId = 'calf-raise';
+    } else if (rawSlug === 'neutral-lat-pulldown') {
+      exId = 'lat-pulldown';
+    } else if (rawSlug === 'chest-supported-db-row') {
+      exId = 'chest-supported-row';
+    } else if (rawSlug === 'incline-dumbbell-curl') {
+      exId = 'incline-curl';
+    } else if (rawSlug === 'face-pulls') {
+      exId = 'face-pull';
+    } else if (rawSlug === 'romanian-deadlift-rdl' || rawSlug === 'romanian-deadlift') {
+      exId = 'rdl';
+    } else if (rawSlug === 'flat-dumbbell-press') {
+      exId = 'db-flat-press';
+    } else if (rawSlug === 'standing-db-lateral-raise') {
+      exId = 'db-lateral-raise';
+    } else if (rawSlug === '90-90-hip-internal-external-flow') {
+      exId = '90-90-hip-flow';
+    } else if (rawSlug === 'couch-stretch-hip-flexors') {
+      exId = 'couch-stretch';
     }
 
     return {
