@@ -10,9 +10,7 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
-  StyleSheet,
   Modal,
-  SafeAreaView
 } from 'react-native';
 import { router, Stack, type Href } from 'expo-router';
 import * as Haptics from 'expo-haptics';
@@ -21,25 +19,13 @@ import {
   CheckCircle2,
   Plus,
   Minus,
-  Clock,
   HelpCircle,
-  RotateCcw,
-  ChevronRight,
-  ChevronLeft,
-  ChevronDown,
-  ChevronUp,
   Calculator,
   ArrowLeftRight,
   Sparkles,
-  Play,
-  Pause,
-  FastForward,
   Flag,
-  FileText,
-  Dumbbell,
   Trash2,
   X,
-  Info,
   AlertTriangle,
   BookOpen
 } from 'lucide-react-native';
@@ -48,7 +34,6 @@ import { useTheme } from '@/src/hooks/use-theme';
 import { createThemeStyles } from '@/src/utils/themeStyles';
 import MaskedGlassBG from '@/src/components/masked-glass-bg';
 import { useDataFactory } from '@/src/context/DataFactoryContext';
-import type { SetType } from '@/src/types';
 import { Spacing } from '@/src/constants/theme';
 import {
   DEFAULT_EXERCISES,

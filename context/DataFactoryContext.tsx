@@ -426,17 +426,21 @@ export const DataFactoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
     activeSessionIdRef.current = newSessionId;
 
     if (user?.id) {
-      WorkoutRepository.createSession({
-        id: newSessionId,
-        user_id: user.id,
-        name: briefing.workoutName,
-        status: 'in_progress',
-        started_at: new Date().toISOString(),
-        is_timeboxed: false,
-        is_crowded_gym_mode: false,
-      }).catch((err) => {
-        console.warn('[DataFactory] Error creating session on start:', err);
-      });
+      void (async () => {
+        try {
+          await WorkoutRepository.createSession({
+            id: newSessionId,
+            user_id: user.id,
+            name: briefing.workoutName,
+            status: 'in_progress',
+            started_at: new Date().toISOString(),
+            is_timeboxed: false,
+            is_crowded_gym_mode: false,
+          });
+        } catch (err) {
+          console.warn('[DataFactory] Error creating session on start:', err);
+        }
+      })();
     }
   };
 
