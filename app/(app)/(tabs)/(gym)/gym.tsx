@@ -100,12 +100,14 @@ export default function GymModeScreen() {
       ? `${activeBriefing?.workoutName || ''}-${activeWorkout.map((w) => w.exercise.name).join(',')}`
       : ''
   );
+  const sessionStartedAtRef = useRef<number>(Date.now());
 
   useEffect(() => {
     if (activeWorkout && activeWorkout.length > 0) {
       const currentRoutineKey = `${activeBriefing?.workoutName || ''}-${activeWorkout.map((w) => w.exercise.name).join(',')}`;
       if (loadedWorkoutKeyRef.current !== currentRoutineKey) {
         loadedWorkoutKeyRef.current = currentRoutineKey;
+        sessionStartedAtRef.current = Date.now();
         setExercises(workoutToGym(activeWorkout));
         setCurrentExIndex(0);
         setActiveSetIndex(0);
@@ -385,8 +387,9 @@ export default function GymModeScreen() {
   // Finish Entire Workout
   const handleFinishWorkout = () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    const minutes = Math.max(1, Math.round((Date.now() - sessionStartedAtRef.current) / 60000));
     try {
-      finishActiveWorkout(52);
+      finishActiveWorkout(minutes);
     } catch { }
     router.push('/(app)/(tabs)/(debrief)/debrief' as Href);
   };

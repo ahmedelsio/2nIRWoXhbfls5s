@@ -17,6 +17,7 @@ import { MOCK_NIGHT_DEBRIEF } from '../data/mockData';
 import { PULL_A_SESSION, LEGS_A_SESSION, CROWDED_PUSH_EXERCISES } from '../data/routinesData';
 import { useAuth } from './AuthContext';
 import { WorkoutRepository, normalizeExerciseId } from '../libs/supabase/workout.repository';
+import { LocalStore } from '../libs/offline/storage';
 import { isSupabaseConfigured } from '../libs/supabase/client';
 
 // Helper to provide a rich, persona-specific baseline debrief prior to today's active session
@@ -381,7 +382,7 @@ export const DataFactoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
           };
 
           setsToPersist.push({
-            exerciseId: item.exercise.id || '00000000-0000-0000-0000-000000000002',
+            exerciseId: item.exercise.id || item.exercise.name || 'bench',
             setNumber: sIdx + 1,
             filled,
           });
@@ -476,37 +477,37 @@ export const DataFactoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
     // Persist completed session to LocalStore and sync queue
     const sessionId = activeSessionIdRef.current;
-    WorkoutRepository.createSession({
-      id: sessionId,
-      user_id: user.id,
-      name: debrief.workoutName,
-      status: 'completed',
-      started_at: new Date(Date.now() - durationMinutes * 60 * 1000).toISOString(),
-      is_timeboxed: false,
-      is_crowded_gym_mode: false,
-      notes: debrief.gradeReason,
+    WorkoutRepository.completeSession(sessionId, durationMinutes, debrief.gradeReason, {
+      total_volume_kg: debrief.totalVolumeKg,
+      total_sets_completed: debrief.setsCompleted,
+      session_grade: debrief.sessionGrade,
     }).then(() => {
-      return WorkoutRepository.completeSession(sessionId, durationMinutes, debrief.gradeReason);
-    }).then(() => {
+      const alreadyLoggedSets = LocalStore.getSets(sessionId);
       for (const item of activeWorkout) {
-        const rawExerciseId = item.exercise.id || item.exercise.name || '';
+        const rawExerciseId = item.exercise.id || item.exercise.name || 'bench';
         const normalizedExId = normalizeExerciseId(rawExerciseId);
         item.sets.forEach((set, idx) => {
           if (set.completed) {
-            WorkoutRepository.logSet({
-              session_id: sessionId,
-              user_id: user.id,
-              exercise_id: normalizedExId,
-              set_number: set.setNumber || idx + 1,
-              set_type: (set.type as any) || 'working',
-              weight_kg: set.weightKg,
-              reps: set.reps,
-              rir: typeof set.rir === 'number' ? Math.round(set.rir) : 2,
-              rpe: typeof set.rpe === 'number' ? set.rpe : (typeof set.rir === 'number' ? 10 - set.rir : 8),
-              is_completed: true,
-            }).catch(err => {
-              console.warn('[DataFactory] Error logging set on finish:', err);
-            });
+            const setNumber = set.setNumber || idx + 1;
+            const alreadyExists = alreadyLoggedSets.some(
+              (s) => s.exercise_id === normalizedExId && s.set_number === setNumber
+            );
+            if (!alreadyExists) {
+              WorkoutRepository.logSet({
+                session_id: sessionId,
+                user_id: user.id,
+                exercise_id: normalizedExId,
+                set_number: setNumber,
+                set_type: (set.type as any) || 'working',
+                weight_kg: set.weightKg,
+                reps: set.reps,
+                rir: typeof set.rir === 'number' ? Math.round(set.rir) : 2,
+                rpe: typeof set.rpe === 'number' ? set.rpe : (typeof set.rir === 'number' ? 10 - set.rir : 8),
+                is_completed: true,
+              }).catch(err => {
+                console.warn('[DataFactory] Error logging set on finish:', err);
+              });
+            }
           }
         });
       }

@@ -40,7 +40,7 @@ export default function NightDebriefScreen() {
   const insets = useSafeAreaInsets();
   const styles = createStyles(theme);
   const [copied, setCopied] = useState(false);
-  const { activeDebrief, isDebriefFromLiveSession } = useDataFactory();
+  const { activeDebrief, isDebriefFromLiveSession, liveStats } = useDataFactory();
 
   if (!isDebriefFromLiveSession) {
     return (
@@ -107,6 +107,13 @@ export default function NightDebriefScreen() {
     },
   };
 
+  const setsSubtitle =
+    liveStats?.totalPrescribedSets && liveStats.totalPrescribedSets > 0
+      ? sessionData.setsCompleted >= liveStats.totalPrescribedSets
+        ? '100% target hit'
+        : `${sessionData.setsCompleted} of ${liveStats.totalPrescribedSets} prescribed`
+      : `${sessionData.setsCompleted} of prescribed`;
+
   const handleShareStory = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
@@ -163,7 +170,7 @@ export default function NightDebriefScreen() {
           <View style={styles.metricBox}>
             <Text style={styles.metricLabel}>SETS LOGGED</Text>
             <Text style={styles.metricVal}>{sessionData.setsCompleted}</Text>
-            <Text style={styles.metricSub}>100% target hit</Text>
+            <Text style={styles.metricSub}>{setsSubtitle}</Text>
           </View>
           <View style={styles.metricBox}>
             <Text style={styles.metricLabel}>DURATION</Text>

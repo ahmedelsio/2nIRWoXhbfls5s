@@ -3,7 +3,7 @@ import { onlineManager } from '@tanstack/react-query';
 import { LocalStore } from '../offline/storage';
 import { syncOfflineQueue } from '../offline/syncWorker';
 import { SetInsertSchema, SetUpdateSchema, SessionInsertSchema } from './schemas';
-import type { Database } from './types';
+import type { Database, SessionGrade } from './types';
 import type { ValidatedSetInsert, ValidatedSetUpdate, ValidatedSessionInsert } from './schemas';
 
 type WorkoutSession = Database['public']['Tables']['sessions']['Row'];
@@ -57,6 +57,18 @@ function generateUUID(): string {
     const v = c === 'x' ? r : (r & 0x3) | 0x8;
     return v.toString(16);
   });
+}
+
+function mapToSessionGrade(grade?: string | null): SessionGrade | null {
+  if (!grade) return null;
+  const upper = grade.toUpperCase().trim();
+  if (upper === 'A+' || upper === 'A_PLUS') return 'A_plus';
+  if (upper === 'A') return 'A';
+  if (upper === 'B+' || upper === 'B_PLUS') return 'B_plus';
+  if (upper === 'B' || upper === 'B-') return 'B';
+  if (upper === 'C' || upper === 'C+' || upper === 'C-') return 'C';
+  if (upper === 'DELOAD') return 'deload';
+  return 'B';
 }
 
 export const WorkoutRepository = {
@@ -141,7 +153,7 @@ export const WorkoutRepository = {
         duration_minutes: 0,
         total_volume_kg: 0,
         total_sets_completed: 0,
-        session_grade: 'A',
+        session_grade: null,
         grade_reason: null,
         readiness_score: 85,
         is_timeboxed: false,
@@ -299,19 +311,36 @@ export const WorkoutRepository = {
   /**
    * Finish and complete a workout session.
    */
-  async completeSession(sessionId: string, durationMinutes: number, notes?: string): Promise<void> {
+  async completeSession(
+    sessionId: string,
+    durationMinutes: number,
+    notes?: string,
+    extra?: {
+      total_volume_kg?: number;
+      total_sets_completed?: number;
+      session_grade?: string;
+    }
+  ): Promise<void> {
     const now = new Date().toISOString();
     const sessions = LocalStore.getSessions();
     const session = sessions.find((s) => s.id === sessionId);
 
+    const completedFields = {
+      status: 'completed' as const,
+      completed_at: now,
+      duration_minutes: durationMinutes,
+      notes: notes ?? (session ? session.notes : null),
+      total_volume_kg: extra?.total_volume_kg ?? (session?.total_volume_kg ?? 0),
+      total_tonnage_kg: extra?.total_volume_kg != null ? Number((extra.total_volume_kg / 1000).toFixed(2)) : (session?.total_tonnage_kg ?? 0),
+      total_sets_completed: extra?.total_sets_completed ?? (session?.total_sets_completed ?? 0),
+      session_grade: extra?.session_grade !== undefined ? mapToSessionGrade(extra.session_grade) : (session?.session_grade ?? null),
+      updated_at: now,
+    };
+
     if (session) {
       const completed: WorkoutSession = {
         ...session,
-        status: 'completed',
-        completed_at: now,
-        duration_minutes: durationMinutes,
-        notes: notes ?? session.notes,
-        updated_at: now,
+        ...completedFields,
       };
       LocalStore.saveSession(completed);
     }
@@ -322,16 +351,22 @@ export const WorkoutRepository = {
       table: 'sessions',
       payload: {
         id: sessionId,
-        status: 'completed',
-        completed_at: now,
-        duration_minutes: durationMinutes,
-        notes: notes ?? null,
-        updated_at: now,
+        ...completedFields,
       },
       clientTimestamp: now,
       status: 'pending',
       retryCount: 0,
     });
+
+    if (isSupabaseConfigured && onlineManager.isOnline()) {
+      try {
+        await (supabase.from('sessions') as any)
+          .update(completedFields)
+          .eq('id', sessionId);
+      } catch (err) {
+        console.warn('[WorkoutRepository] Error updating completed session in Supabase:', err);
+      }
+    }
 
     syncOfflineQueue().catch(() => {});
   },
