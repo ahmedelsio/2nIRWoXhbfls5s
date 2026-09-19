@@ -1,26 +1,24 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useRef } from 'react';
-import { 
-  LifterPersona, 
-  WorkoutExercise, 
-  MorningBriefingData, 
-  NightDebriefData, 
+import {
+  LifterPersona,
+  WorkoutExercise,
+  MorningBriefingData,
+  NightDebriefData,
   HistoricalWorkout,
   SetRecord,
-  Exercise
+  Exercise,
 } from '../types';
-import { 
-  LIFTER_PERSONAS, 
-  calculateSessionStats, 
-  generateDebriefFromSession 
+import {
+  LIFTER_PERSONAS,
+  calculateSessionStats,
+  generateDebriefFromSession,
 } from '../data/dataFactory';
 import { MOCK_NIGHT_DEBRIEF } from '../data/mockData';
 import { PULL_A_SESSION, LEGS_A_SESSION, CROWDED_PUSH_EXERCISES } from '../data/routinesData';
 import { useAuth } from './AuthContext';
 import { WorkoutRepository, normalizeExerciseId } from '../libs/supabase/workout.repository';
 import { LocalStore } from '../libs/offline/storage';
-import { isSupabaseConfigured } from '../libs/supabase/client';
 
-// Helper to provide a rich, persona-specific baseline debrief prior to today's active session
 export const getPersonaDefaultDebrief = (persona: LifterPersona): NightDebriefData => {
   if (persona.id === 'sarah') {
     return {
@@ -38,13 +36,13 @@ export const getPersonaDefaultDebrief = (persona: LifterPersona): NightDebriefDa
           value: '16.0kg × 10 reps',
           previousBest: 'First time',
           estimated1RM: 21.3,
-        }
+        },
       ],
       tomorrowPreview: {
         title: 'Recovery Walk & Rest',
         type: 'rest',
         description: 'Take a 30-minute walk. Mild muscle stiffness (DOMS) after session 1 is completely normal and healthy.',
-      }
+      },
     };
   }
   if (persona.id === 'marcus') {
@@ -63,13 +61,13 @@ export const getPersonaDefaultDebrief = (persona: LifterPersona): NightDebriefDa
           value: '120.0kg × 3 reps',
           previousBest: '117.5kg × 3 reps',
           estimated1RM: 130.9,
-        }
+        },
       ],
       tomorrowPreview: {
         title: 'Heavy Lower Body (Squat & Deadlift)',
         type: 'workout',
         description: 'Session 3: 140kg Barbell Back Squats @ RPE 8 + Deficit Romanian Deadlifts. Ensure 8h sleep tonight.',
-      }
+      },
     };
   }
   if (persona.id === 'elena') {
@@ -88,16 +86,15 @@ export const getPersonaDefaultDebrief = (persona: LifterPersona): NightDebriefDa
           value: '70.0kg × 8 reps',
           previousBest: '65.0kg × 8 reps',
           estimated1RM: 86.8,
-        }
+        },
       ],
       tomorrowPreview: {
         title: 'Upper Body Pull & Core',
         type: 'workout',
         description: 'Lat pulldowns, chest-supported rows, and lateral delts. 50 minutes estimated.',
-      }
+      },
     };
   }
-  // Default Alex
   return MOCK_NIGHT_DEBRIEF;
 };
 
@@ -139,8 +136,7 @@ const DataFactoryContext = createContext<DataFactoryContextType | undefined>(und
 
 export const DataFactoryProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, profile } = useAuth();
-  
-  // RFC4122 compliant v4 Session ID generator
+
   const generateSessionId = () => {
     if (typeof crypto !== 'undefined' && crypto.randomUUID) {
       try {
@@ -156,11 +152,10 @@ export const DataFactoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   const [activeSessionId, setActiveSessionId] = useState<string>(() => generateSessionId());
   const activeSessionIdRef = useRef<string>(activeSessionId);
+  activeSessionIdRef.current = activeSessionId;
 
-  // Base profile fallback
   const baseLifter = LIFTER_PERSONAS['alex'];
 
-  // Dynamically derive active lifter persona from authenticated user and profile
   const dynamicPersona = useMemo<LifterPersona>(() => {
     if (user) {
       const name = profile?.display_name || user.user_metadata?.display_name || user.email?.split('@')[0] || 'Lifter';
@@ -214,34 +209,11 @@ export const DataFactoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const [isMobilityActive, setMobilityActive] = useState<boolean>(false);
   const [sqliteSyncStatus, setSqliteSyncStatus] = useState<'synced' | 'syncing' | 'queued'>('synced');
 
-  // Keep persona synced with auth
   useEffect(() => {
     setActivePersona(dynamicPersona);
     setActivePersonaId(dynamicPersona.id);
   }, [dynamicPersona]);
 
-  // Ensure initial session is created for authenticated non-guest user
-  useEffect(() => {
-    if (user?.id && user.id !== '00000000-0000-0000-0000-000000000001' && activeSessionIdRef.current) {
-      const currentId = activeSessionIdRef.current;
-      const existing = LocalStore.getSessions().find((s) => s.id === currentId);
-      if (!existing) {
-        WorkoutRepository.createSession({
-          id: currentId,
-          user_id: user.id,
-          name: activeBriefing?.workoutName || 'Push A (Hypertrophy)',
-          status: 'in_progress',
-          started_at: new Date().toISOString(),
-          is_timeboxed: false,
-          is_crowded_gym_mode: false,
-        }).catch((err) => {
-          console.warn('[DataFactory] Error creating initial session:', err);
-        });
-      }
-    }
-  }, [user?.id]);
-
-  // Compatibility switcher (no-op for demo personas)
   const selectPersona = (personaId: string) => {
     if (LIFTER_PERSONAS[personaId] && !user) {
       const p = LIFTER_PERSONAS[personaId];
@@ -250,7 +222,6 @@ export const DataFactoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
   };
 
-  // Reset current state to clean initial defaults
   const resetToInitialPersona = () => {
     setActiveWorkout(JSON.parse(JSON.stringify(dynamicPersona.initialWorkout)));
     setActiveBriefing(dynamicPersona.initialBriefing);
@@ -258,74 +229,62 @@ export const DataFactoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
     setMobilityActive(false);
   };
 
-  // Update a single set in active workout
-  const updateActiveWorkoutSet = (
-    exerciseIndex: number, 
-    setIndex: number, 
+  const persistSet = (
+    exerciseIndex: number,
+    setIndex: number,
     setFields: Partial<SetRecord>
   ) => {
-    setActiveWorkout(prev => {
+    if (!user?.id) return;
+    const targetEx = activeWorkout[exerciseIndex];
+    if (!targetEx || !targetEx.sets[setIndex]) return;
+    const mergedSet: SetRecord = { ...targetEx.sets[setIndex], ...setFields };
+    const exerciseId = normalizeExerciseId(targetEx.exercise.id || targetEx.exercise.name || '');
+    const currentSessionId = activeSessionIdRef.current;
+    setTimeout(() => {
+      WorkoutRepository.logSet({
+        session_id: currentSessionId,
+        user_id: user.id,
+        exercise_id: exerciseId,
+        set_number: setIndex + 1,
+        set_type: (mergedSet.type as any) || 'working',
+        weight_kg: mergedSet.weightKg,
+        reps: mergedSet.reps,
+        target_reps: mergedSet.targetReps ?? mergedSet.reps,
+        target_weight_kg: mergedSet.weightKg,
+        rir: mergedSet.rir ?? 2,
+        rpe: mergedSet.rpe ?? 8,
+        is_completed: Boolean(mergedSet.completed),
+      }).catch((err) => {
+        console.warn('[DataFactory] Error writing set to Supabase:', err);
+      });
+    }, 0);
+  };
+
+  const updateActiveWorkoutSet = (
+    exerciseIndex: number,
+    setIndex: number,
+    setFields: Partial<SetRecord>
+  ) => {
+    setActiveWorkout((prev) => {
+      if (!Array.isArray(prev) || !prev[exerciseIndex]) return prev;
       const copy = [...prev];
-      if (!copy[exerciseIndex]) return prev;
       const targetEx = { ...copy[exerciseIndex] };
       const updatedSets = [...targetEx.sets];
       if (!updatedSets[setIndex]) return prev;
-
-      const mergedSet: SetRecord = {
-        ...updatedSets[setIndex],
-        ...setFields,
-      };
-
-      updatedSets[setIndex] = mergedSet;
+      updatedSets[setIndex] = { ...updatedSets[setIndex], ...setFields };
       targetEx.sets = updatedSets;
       copy[exerciseIndex] = targetEx;
       return copy;
     });
-
-    // Write to WorkoutRepository outside React render phase
-    if (user?.id && user.id !== '00000000-0000-0000-0000-000000000001') {
-      const targetEx = activeWorkout[exerciseIndex];
-      if (targetEx && targetEx.sets[setIndex]) {
-        const mergedSet: SetRecord = {
-          ...targetEx.sets[setIndex],
-          ...setFields,
-        };
-        const rawExerciseId = targetEx.exercise.id || targetEx.exercise.name || '';
-        const exerciseId = normalizeExerciseId(rawExerciseId);
-        const targetUserId = user.id;
-        const currentSessionId = activeSessionIdRef.current;
-        const sessionName = activeBriefing?.workoutName || 'Push A (Hypertrophy)';
-        setTimeout(() => {
-          WorkoutRepository.logSet({
-            session_id: currentSessionId,
-            user_id: targetUserId,
-            exercise_id: exerciseId,
-            set_number: setIndex + 1,
-            set_type: (mergedSet.type as any) || 'working',
-            weight_kg: mergedSet.weightKg,
-            reps: mergedSet.reps,
-            target_reps: mergedSet.targetReps ?? mergedSet.reps,
-            target_weight_kg: mergedSet.weightKg,
-            rir: mergedSet.rir ?? 2,
-            rpe: mergedSet.rpe ?? 8,
-            is_completed: Boolean(mergedSet.completed),
-          }).catch(err => {
-            console.warn('[DataFactory] Error writing set to Supabase:', err);
-          });
-        }, 0);
-      }
-    }
-
-    // Mark as locally queued in offline sync
+    persistSet(exerciseIndex, setIndex, setFields);
     setSqliteSyncStatus('queued');
     setTimeout(() => setSqliteSyncStatus('synced'), 400);
   };
 
-  // Add an extra set to an exercise in active workout
   const addSetToExercise = (exerciseIndex: number) => {
-    setActiveWorkout(prev => {
+    setActiveWorkout((prev) => {
+      if (!prev[exerciseIndex]) return prev;
       const copy = [...prev];
-      if (!copy[exerciseIndex]) return prev;
       const targetEx = { ...copy[exerciseIndex] };
       const lastSet = targetEx.sets[targetEx.sets.length - 1];
       const newSetNumber = targetEx.sets.length + 1;
@@ -347,13 +306,12 @@ export const DataFactoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
     });
   };
 
-  // Remove a set from an exercise in active workout
   const removeSetFromExercise = (exerciseIndex: number, setIndex: number) => {
-    setActiveWorkout(prev => {
+    setActiveWorkout((prev) => {
+      if (!prev[exerciseIndex]) return prev;
       const copy = [...prev];
-      if (!copy[exerciseIndex]) return prev;
       const targetEx = { ...copy[exerciseIndex] };
-      if (targetEx.sets.length <= 1) return prev; // Keep at least one set
+      if (targetEx.sets.length <= 1) return prev;
       targetEx.sets = targetEx.sets
         .filter((_, idx) => idx !== setIndex)
         .map((s, idx) => ({ ...s, setNumber: idx + 1 }));
@@ -362,38 +320,30 @@ export const DataFactoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
     });
   };
 
-  // Swap an exercise in active workout (e.g. crowded gym substitution)
   const swapActiveExercise = (exerciseIndex: number, newExercise: Exercise) => {
-    setActiveWorkout(prev => {
+    setActiveWorkout((prev) => {
+      if (!prev[exerciseIndex]) return prev;
       const copy = [...prev];
-      if (!copy[exerciseIndex]) return prev;
       const original = copy[exerciseIndex];
-
       copy[exerciseIndex] = {
         exercise: newExercise,
         lastPerformance: 'First session with substitution',
-        targetPerformance: `Target: 3 sets @ RIR 2`,
+        targetPerformance: 'Target: 3 sets @ RIR 2',
         notes: `Substituted for ${original.exercise.name} (${newExercise.equipment})`,
         sets: original.sets.map((s) => ({
           ...s,
           completed: false,
-          weightKg: Math.max(10, Math.round(s.weightKg * 0.7)), // safe starting load
+          weightKg: Math.max(10, Math.round(s.weightKg * 0.7)),
         })),
       };
       return copy;
     });
   };
 
-  // Quick fill all sets (great for testing full loop without manually tapping 15 times)
   const quickFillAllSets = () => {
-    const setsToPersist: Array<{
-      exerciseId: string;
-      setNumber: number;
-      filled: SetRecord;
-    }> = [];
-
-    setActiveWorkout(prev => {
-      return prev.map((item) => ({
+    const setsToPersist: Array<{ exerciseId: string; setNumber: number; filled: SetRecord }> = [];
+    setActiveWorkout((prev) =>
+      prev.map((item) => ({
         ...item,
         sets: item.sets.map((s, sIdx) => {
           const filled = {
@@ -405,79 +355,69 @@ export const DataFactoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
             rpe: typeof s.rir === 'number' ? 10 - s.rir : 8,
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           };
-
           setsToPersist.push({
             exerciseId: item.exercise.id || item.exercise.name || 'bench',
             setNumber: sIdx + 1,
             filled,
           });
-
           return filled;
         }),
-      }));
-    });
+      }))
+    );
 
-    // Write all sets asynchronously outside React render
-    if (user?.id && user.id !== '00000000-0000-0000-0000-000000000001') {
-      const targetUserId = user.id;
-      const currentSessionId = activeSessionIdRef.current;
-      setTimeout(() => {
-        for (const item of setsToPersist) {
-          WorkoutRepository.logSet({
-            session_id: currentSessionId,
-            user_id: targetUserId,
-            exercise_id: normalizeExerciseId(item.exerciseId),
-            set_number: item.setNumber,
-            set_type: (item.filled.type as any) || 'working',
-            weight_kg: item.filled.weightKg,
-            reps: item.filled.reps,
-            target_reps: item.filled.targetReps ?? item.filled.reps,
-            target_weight_kg: item.filled.weightKg,
-            rir: item.filled.rir,
-            rpe: item.filled.rpe,
-            is_completed: true,
-          }).catch(() => {});
-        }
-      }, 0);
-    }
+    if (!user?.id) return;
+    const currentSessionId = activeSessionIdRef.current;
+    setTimeout(() => {
+      for (const item of setsToPersist) {
+        WorkoutRepository.logSet({
+          session_id: currentSessionId,
+          user_id: user.id,
+          exercise_id: normalizeExerciseId(item.exerciseId),
+          set_number: item.setNumber,
+          set_type: (item.filled.type as any) || 'working',
+          weight_kg: item.filled.weightKg,
+          reps: item.filled.reps,
+          target_reps: item.filled.targetReps ?? item.filled.reps,
+          target_weight_kg: item.filled.weightKg,
+          rir: item.filled.rir,
+          rpe: item.filled.rpe,
+          is_completed: true,
+        }).catch(() => {});
+      }
+    }, 0);
   };
 
-  // Load custom routine (e.g. from Schedule Modal or Routine Swapper)
-  const loadCustomRoutine = (workout: WorkoutExercise[], briefing: MorningBriefingData) => {
+  const startSession = (workout: WorkoutExercise[], briefing: MorningBriefingData) => {
     const clonedWorkout: WorkoutExercise[] = JSON.parse(JSON.stringify(workout));
-    clonedWorkout.forEach(item => {
-      item.sets = item.sets.map(s => ({
-        ...s,
-        completed: false,
-      }));
+    clonedWorkout.forEach((item) => {
+      item.sets = item.sets.map((s) => ({ ...s, completed: false }));
     });
     setActiveWorkout(clonedWorkout);
     setActiveBriefing(briefing);
     setLatestDebrief(null);
+
     const newSessionId = generateSessionId();
     activeSessionIdRef.current = newSessionId;
     setActiveSessionId(newSessionId);
 
-    if (user?.id && user.id !== '00000000-0000-0000-0000-000000000001') {
-      void (async () => {
-        try {
-          await WorkoutRepository.createSession({
-            id: newSessionId,
-            user_id: user.id,
-            name: briefing.workoutName || 'Push A (Hypertrophy)',
-            status: 'in_progress',
-            started_at: new Date().toISOString(),
-            is_timeboxed: false,
-            is_crowded_gym_mode: false,
-          });
-        } catch (err) {
-          console.warn('[DataFactory] Error creating session on start:', err);
-        }
-      })();
-    }
+    if (!user?.id) return;
+    WorkoutRepository.createSession({
+      id: newSessionId,
+      user_id: user.id,
+      name: briefing.workoutName,
+      status: 'in_progress',
+      started_at: new Date().toISOString(),
+      is_timeboxed: false,
+      is_crowded_gym_mode: false,
+    }).catch((err) => {
+      console.warn('[DataFactory] Error creating session on start:', err);
+    });
   };
 
-  // Finish active workout and calculate real Night Debrief
+  const loadCustomRoutine = (workout: WorkoutExercise[], briefing: MorningBriefingData) => {
+    startSession(workout, briefing);
+  };
+
   const finishActiveWorkout = (durationMinutes: number = 54): NightDebriefData => {
     const { debrief, newPRs } = generateDebriefFromSession(
       activeBriefing.workoutName,
@@ -489,96 +429,71 @@ export const DataFactoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
     setLatestDebrief(debrief);
     setKnownPRs(newPRs);
 
-    // Save to historical workouts list
-    const newHistoryRecord: HistoricalWorkout = {
-      id: 'hist-' + Date.now(),
-      workoutName: debrief.workoutName,
-      date: 'Today, ' + debrief.completedAt,
-      durationMinutes: debrief.durationMinutes,
-      totalVolumeKg: debrief.totalVolumeKg,
-      setsCount: debrief.setsCompleted,
-      sessionGrade: debrief.sessionGrade,
-      keyLift: debrief.prs.length > 0 
-        ? `${debrief.prs[0].exerciseName} (${debrief.prs[0].value})` 
-        : `${activeWorkout[0]?.exercise.name || 'Workout'} Completed`,
-      prsDetected: debrief.prs.length,
-    };
+    setHistory((prev) => [
+      {
+        id: 'hist-' + Date.now(),
+        workoutName: debrief.workoutName,
+        date: 'Today, ' + debrief.completedAt,
+        durationMinutes: debrief.durationMinutes,
+        totalVolumeKg: debrief.totalVolumeKg,
+        setsCount: debrief.setsCompleted,
+        sessionGrade: debrief.sessionGrade,
+        keyLift:
+          debrief.prs.length > 0
+            ? `${debrief.prs[0].exerciseName} (${debrief.prs[0].value})`
+            : `${activeWorkout[0]?.exercise.name || 'Workout'} Completed`,
+        prsDetected: debrief.prs.length,
+      },
+      ...prev,
+    ]);
 
-    setHistory(prev => [newHistoryRecord, ...prev]);
-
-    // Capture the session ID that is now finishing
     const finishingSessionId = activeSessionIdRef.current;
 
-    if (user?.id && user.id !== '00000000-0000-0000-0000-000000000001') {
-      const targetUserId = user.id;
-
-      // 1. Ensure all completed sets from activeWorkout are persisted for THIS session
+    if (user?.id) {
       const alreadyLoggedSets = LocalStore.getSets(finishingSessionId);
       for (const item of activeWorkout) {
-        const rawExerciseId = item.exercise.id || item.exercise.name || 'bench';
-        const normalizedExId = normalizeExerciseId(rawExerciseId);
+        const normalizedExId = normalizeExerciseId(item.exercise.id || item.exercise.name || '');
         item.sets.forEach((set, idx) => {
-          if (set.completed) {
-            const setNumber = set.setNumber || idx + 1;
-            const alreadyExists = alreadyLoggedSets.some(
-              (s) => s.exercise_id === normalizedExId && s.set_number === setNumber
-            );
-            if (!alreadyExists) {
-              WorkoutRepository.logSet({
-                session_id: finishingSessionId,
-                user_id: targetUserId,
-                exercise_id: normalizedExId,
-                set_number: setNumber,
-                set_type: (set.type as any) || 'working',
-                weight_kg: set.weightKg,
-                reps: set.reps,
-                rir: typeof set.rir === 'number' ? Math.round(set.rir) : 2,
-                rpe: typeof set.rpe === 'number' ? set.rpe : (typeof set.rir === 'number' ? 10 - set.rir : 8),
-                is_completed: true,
-              }).catch(err => {
-                console.warn('[DataFactory] Error logging set on finish:', err);
-              });
-            }
-          }
+          if (!set.completed) return;
+          const setNumber = set.setNumber || idx + 1;
+          const alreadyExists = alreadyLoggedSets.some(
+            (s) => s.exercise_id === normalizedExId && s.set_number === setNumber
+          );
+          if (alreadyExists) return;
+          WorkoutRepository.logSet({
+            session_id: finishingSessionId,
+            user_id: user.id,
+            exercise_id: normalizedExId,
+            set_number: setNumber,
+            set_type: (set.type as any) || 'working',
+            weight_kg: set.weightKg,
+            reps: set.reps,
+            rir: typeof set.rir === 'number' ? Math.round(set.rir) : 2,
+            rpe: typeof set.rpe === 'number' ? set.rpe : 8,
+            is_completed: true,
+          }).catch((err) => {
+            console.warn('[DataFactory] Error logging set on finish:', err);
+          });
         });
       }
 
-      // 2. Complete session in Supabase & LocalStore
       WorkoutRepository.completeSession(finishingSessionId, durationMinutes, debrief.gradeReason, {
         total_volume_kg: debrief.totalVolumeKg,
         total_sets_completed: debrief.setsCompleted,
         session_grade: debrief.sessionGrade,
-      }).catch(err => {
-        console.warn('[DataFactory] Error persisting completed session to Supabase:', err);
+      }).catch((err) => {
+        console.warn('[DataFactory] Error completing session:', err);
       });
     }
 
-    // Reset active workout sets for the next session so no completed flags carry over
-    setActiveWorkout(prev => prev.map(item => ({
-      ...item,
-      sets: item.sets.map(s => ({
-        ...s,
-        completed: false,
-      })),
-    })));
-
-    // Prepare a fresh new session ID for the next workout
-    const nextSessionId = generateSessionId();
-    activeSessionIdRef.current = nextSessionId;
-    setActiveSessionId(nextSessionId);
-
     setSqliteSyncStatus('syncing');
     setTimeout(() => setSqliteSyncStatus('synced'), 600);
-
     return debrief;
   };
 
-  // Routine switcher
   const switchRoutine = (workoutKey: string, customName?: string) => {
     if (workoutKey === 'pull_a') {
-      const cloned = JSON.parse(JSON.stringify(PULL_A_SESSION));
-      setActiveWorkout(cloned);
-      setActiveBriefing({
+      startSession(JSON.parse(JSON.stringify(PULL_A_SESSION)), {
         workoutName: customName || 'Back & Bicep Overload (Pull A)',
         splitDay: 'Day 3 • Pull Focus',
         estimatedMinutes: 55,
@@ -590,11 +505,8 @@ export const DataFactoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
         primaryLift: 'Barbell Bent-Over Row',
         primaryTarget: '72.5kg for 3 sets of 8 reps @ RIR 2',
       });
-      setLatestDebrief(null);
     } else if (workoutKey === 'legs_a') {
-      const cloned = JSON.parse(JSON.stringify(LEGS_A_SESSION));
-      setActiveWorkout(cloned);
-      setActiveBriefing({
+      startSession(JSON.parse(JSON.stringify(LEGS_A_SESSION)), {
         workoutName: customName || 'Lower Body Compound (Legs A)',
         splitDay: 'Day 4 • Legs Focus',
         estimatedMinutes: 65,
@@ -606,11 +518,8 @@ export const DataFactoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
         primaryLift: 'Barbell Back Squat',
         primaryTarget: '102.5kg for 3 sets of 6 reps @ RIR 2',
       });
-      setLatestDebrief(null);
     } else if (workoutKey === 'crowded_push') {
-      const cloned = JSON.parse(JSON.stringify(CROWDED_PUSH_EXERCISES));
-      setActiveWorkout(cloned);
-      setActiveBriefing({
+      startSession(JSON.parse(JSON.stringify(CROWDED_PUSH_EXERCISES)), {
         workoutName: customName || '30-Min Crowded Gym Push',
         splitDay: 'Time-Boxed Emergency Split',
         estimatedMinutes: 30,
@@ -622,46 +531,20 @@ export const DataFactoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
         primaryLift: 'Dumbbell Flat Bench Press',
         primaryTarget: '32.0kg for 3 sets of 8 reps',
       });
-      setLatestDebrief(null);
     } else {
-      const cloned = JSON.parse(JSON.stringify(activePersona.initialWorkout));
-      setActiveWorkout(cloned);
-      setActiveBriefing(activePersona.initialBriefing);
-      setLatestDebrief(null);
-    }
-
-    const newSessionId = generateSessionId();
-    activeSessionIdRef.current = newSessionId;
-    setActiveSessionId(newSessionId);
-
-    if (user?.id && user.id !== '00000000-0000-0000-0000-000000000001') {
-      const resolvedName = customName || (workoutKey === 'pull_a' ? 'Back & Bicep Overload (Pull A)' : workoutKey === 'legs_a' ? 'Lower Body Compound (Legs A)' : workoutKey === 'crowded_push' ? '30-Min Crowded Gym Push' : activePersona.initialBriefing.workoutName);
-      void (async () => {
-        try {
-          await WorkoutRepository.createSession({
-            id: newSessionId,
-            user_id: user.id,
-            name: resolvedName,
-            status: 'in_progress',
-            started_at: new Date().toISOString(),
-            is_timeboxed: false,
-            is_crowded_gym_mode: false,
-          });
-        } catch (err) {
-          console.warn('[DataFactory] Error creating session on switchRoutine:', err);
-        }
-      })();
+      startSession(
+        JSON.parse(JSON.stringify(activePersona.initialWorkout)),
+        activePersona.initialBriefing
+      );
     }
   };
 
-  // Active debrief: If latest session has finished, use it; otherwise compute a rich persona-calibrated debrief
   const activeDebrief = useMemo<NightDebriefData>(() => {
     if (latestDebrief) return latestDebrief;
     return getPersonaDefaultDebrief(activePersona);
   }, [latestDebrief, activePersona]);
 
   const isDebriefFromLiveSession = latestDebrief !== null;
-
   const liveStats = calculateSessionStats(activeWorkout);
 
   return (
