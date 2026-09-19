@@ -106,6 +106,7 @@ interface DataFactoryContextType {
   activePersona: LifterPersona;
   activeWorkout: WorkoutExercise[];
   activeBriefing: MorningBriefingData;
+  activeSessionId: string;
   history: HistoricalWorkout[];
   knownPRs: Record<string, { weightKg: number; reps: number; e1RM: number; date: string }>;
   latestDebrief: NightDebriefData | null;
@@ -153,7 +154,8 @@ export const DataFactoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
     });
   };
 
-  const activeSessionIdRef = useRef<string>(generateSessionId());
+  const [activeSessionId, setActiveSessionId] = useState<string>(() => generateSessionId());
+  const activeSessionIdRef = useRef<string>(activeSessionId);
 
   // Base profile fallback
   const baseLifter = LIFTER_PERSONAS['alex'];
@@ -218,6 +220,27 @@ export const DataFactoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
     setActivePersonaId(dynamicPersona.id);
   }, [dynamicPersona]);
 
+  // Ensure initial session is created for authenticated non-guest user
+  useEffect(() => {
+    if (user?.id && user.id !== '00000000-0000-0000-0000-000000000001' && activeSessionIdRef.current) {
+      const currentId = activeSessionIdRef.current;
+      const existing = LocalStore.getSessions().find((s) => s.id === currentId);
+      if (!existing) {
+        WorkoutRepository.createSession({
+          id: currentId,
+          user_id: user.id,
+          name: activeBriefing?.workoutName || 'Push A (Hypertrophy)',
+          status: 'in_progress',
+          started_at: new Date().toISOString(),
+          is_timeboxed: false,
+          is_crowded_gym_mode: false,
+        }).catch((err) => {
+          console.warn('[DataFactory] Error creating initial session:', err);
+        });
+      }
+    }
+  }, [user?.id]);
+
   // Compatibility switcher (no-op for demo personas)
   const selectPersona = (personaId: string) => {
     if (LIFTER_PERSONAS[personaId] && !user) {
@@ -260,7 +283,7 @@ export const DataFactoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
     });
 
     // Write to WorkoutRepository outside React render phase
-    if (user?.id) {
+    if (user?.id && user.id !== '00000000-0000-0000-0000-000000000001') {
       const targetEx = activeWorkout[exerciseIndex];
       if (targetEx && targetEx.sets[setIndex]) {
         const mergedSet: SetRecord = {
@@ -270,9 +293,11 @@ export const DataFactoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
         const rawExerciseId = targetEx.exercise.id || targetEx.exercise.name || '';
         const exerciseId = normalizeExerciseId(rawExerciseId);
         const targetUserId = user.id;
+        const currentSessionId = activeSessionIdRef.current;
+        const sessionName = activeBriefing?.workoutName || 'Push A (Hypertrophy)';
         setTimeout(() => {
           WorkoutRepository.logSet({
-            session_id: activeSessionIdRef.current,
+            session_id: currentSessionId,
             user_id: targetUserId,
             exercise_id: exerciseId,
             set_number: setIndex + 1,
@@ -393,12 +418,13 @@ export const DataFactoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
     });
 
     // Write all sets asynchronously outside React render
-    if (user?.id) {
+    if (user?.id && user.id !== '00000000-0000-0000-0000-000000000001') {
       const targetUserId = user.id;
+      const currentSessionId = activeSessionIdRef.current;
       setTimeout(() => {
         for (const item of setsToPersist) {
           WorkoutRepository.logSet({
-            session_id: activeSessionIdRef.current,
+            session_id: currentSessionId,
             user_id: targetUserId,
             exercise_id: normalizeExerciseId(item.exerciseId),
             set_number: item.setNumber,
@@ -419,19 +445,26 @@ export const DataFactoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
   // Load custom routine (e.g. from Schedule Modal or Routine Swapper)
   const loadCustomRoutine = (workout: WorkoutExercise[], briefing: MorningBriefingData) => {
     const clonedWorkout: WorkoutExercise[] = JSON.parse(JSON.stringify(workout));
+    clonedWorkout.forEach(item => {
+      item.sets = item.sets.map(s => ({
+        ...s,
+        completed: false,
+      }));
+    });
     setActiveWorkout(clonedWorkout);
     setActiveBriefing(briefing);
     setLatestDebrief(null);
     const newSessionId = generateSessionId();
     activeSessionIdRef.current = newSessionId;
+    setActiveSessionId(newSessionId);
 
-    if (user?.id) {
+    if (user?.id && user.id !== '00000000-0000-0000-0000-000000000001') {
       void (async () => {
         try {
           await WorkoutRepository.createSession({
             id: newSessionId,
             user_id: user.id,
-            name: briefing.workoutName,
+            name: briefing.workoutName || 'Push A (Hypertrophy)',
             status: 'in_progress',
             started_at: new Date().toISOString(),
             is_timeboxed: false,
@@ -473,20 +506,14 @@ export const DataFactoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
     setHistory(prev => [newHistoryRecord, ...prev]);
 
-    if (!user?.id) {
-      // Prepare a new session ID for next workout
-      activeSessionIdRef.current = generateSessionId();
-      return debrief;
-    }
+    // Capture the session ID that is now finishing
+    const finishingSessionId = activeSessionIdRef.current;
 
-    // Persist completed session to LocalStore and sync queue
-    const sessionId = activeSessionIdRef.current;
-    WorkoutRepository.completeSession(sessionId, durationMinutes, debrief.gradeReason, {
-      total_volume_kg: debrief.totalVolumeKg,
-      total_sets_completed: debrief.setsCompleted,
-      session_grade: debrief.sessionGrade,
-    }).then(() => {
-      const alreadyLoggedSets = LocalStore.getSets(sessionId);
+    if (user?.id && user.id !== '00000000-0000-0000-0000-000000000001') {
+      const targetUserId = user.id;
+
+      // 1. Ensure all completed sets from activeWorkout are persisted for THIS session
+      const alreadyLoggedSets = LocalStore.getSets(finishingSessionId);
       for (const item of activeWorkout) {
         const rawExerciseId = item.exercise.id || item.exercise.name || 'bench';
         const normalizedExId = normalizeExerciseId(rawExerciseId);
@@ -498,8 +525,8 @@ export const DataFactoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
             );
             if (!alreadyExists) {
               WorkoutRepository.logSet({
-                session_id: sessionId,
-                user_id: user.id,
+                session_id: finishingSessionId,
+                user_id: targetUserId,
                 exercise_id: normalizedExId,
                 set_number: setNumber,
                 set_type: (set.type as any) || 'working',
@@ -515,12 +542,30 @@ export const DataFactoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
           }
         });
       }
-    }).catch(err => {
-      console.warn('[DataFactory] Error persisting completed session to Supabase:', err);
-    });
 
-    // Prepare a new session ID for next workout
-    activeSessionIdRef.current = generateSessionId();
+      // 2. Complete session in Supabase & LocalStore
+      WorkoutRepository.completeSession(finishingSessionId, durationMinutes, debrief.gradeReason, {
+        total_volume_kg: debrief.totalVolumeKg,
+        total_sets_completed: debrief.setsCompleted,
+        session_grade: debrief.sessionGrade,
+      }).catch(err => {
+        console.warn('[DataFactory] Error persisting completed session to Supabase:', err);
+      });
+    }
+
+    // Reset active workout sets for the next session so no completed flags carry over
+    setActiveWorkout(prev => prev.map(item => ({
+      ...item,
+      sets: item.sets.map(s => ({
+        ...s,
+        completed: false,
+      })),
+    })));
+
+    // Prepare a fresh new session ID for the next workout
+    const nextSessionId = generateSessionId();
+    activeSessionIdRef.current = nextSessionId;
+    setActiveSessionId(nextSessionId);
 
     setSqliteSyncStatus('syncing');
     setTimeout(() => setSqliteSyncStatus('synced'), 600);
@@ -584,6 +629,29 @@ export const DataFactoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
       setActiveBriefing(activePersona.initialBriefing);
       setLatestDebrief(null);
     }
+
+    const newSessionId = generateSessionId();
+    activeSessionIdRef.current = newSessionId;
+    setActiveSessionId(newSessionId);
+
+    if (user?.id && user.id !== '00000000-0000-0000-0000-000000000001') {
+      const resolvedName = customName || (workoutKey === 'pull_a' ? 'Back & Bicep Overload (Pull A)' : workoutKey === 'legs_a' ? 'Lower Body Compound (Legs A)' : workoutKey === 'crowded_push' ? '30-Min Crowded Gym Push' : activePersona.initialBriefing.workoutName);
+      void (async () => {
+        try {
+          await WorkoutRepository.createSession({
+            id: newSessionId,
+            user_id: user.id,
+            name: resolvedName,
+            status: 'in_progress',
+            started_at: new Date().toISOString(),
+            is_timeboxed: false,
+            is_crowded_gym_mode: false,
+          });
+        } catch (err) {
+          console.warn('[DataFactory] Error creating session on switchRoutine:', err);
+        }
+      })();
+    }
   };
 
   // Active debrief: If latest session has finished, use it; otherwise compute a rich persona-calibrated debrief
@@ -603,6 +671,7 @@ export const DataFactoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
         activePersona,
         activeWorkout,
         activeBriefing,
+        activeSessionId,
         history,
         knownPRs,
         latestDebrief,

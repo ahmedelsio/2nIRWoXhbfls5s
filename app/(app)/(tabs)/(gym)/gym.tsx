@@ -10,7 +10,9 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
+  StyleSheet,
   Modal,
+  SafeAreaView
 } from 'react-native';
 import { router, Stack, type Href } from 'expo-router';
 import * as Haptics from 'expo-haptics';
@@ -19,13 +21,25 @@ import {
   CheckCircle2,
   Plus,
   Minus,
+  Clock,
   HelpCircle,
+  RotateCcw,
+  ChevronRight,
+  ChevronLeft,
+  ChevronDown,
+  ChevronUp,
   Calculator,
   ArrowLeftRight,
   Sparkles,
+  Play,
+  Pause,
+  FastForward,
   Flag,
+  FileText,
+  Dumbbell,
   Trash2,
   X,
+  Info,
   AlertTriangle,
   BookOpen
 } from 'lucide-react-native';
@@ -34,6 +48,7 @@ import { useTheme } from '@/src/hooks/use-theme';
 import { createThemeStyles } from '@/src/utils/themeStyles';
 import MaskedGlassBG from '@/src/components/masked-glass-bg';
 import { useDataFactory } from '@/src/context/DataFactoryContext';
+import type { SetType } from '@/src/types';
 import { Spacing } from '@/src/constants/theme';
 import {
   DEFAULT_EXERCISES,
@@ -64,6 +79,7 @@ export default function GymModeScreen() {
 
   // Global Context Integration
   const {
+    activeSessionId,
     activeWorkout,
     activeBriefing,
     updateActiveWorkoutSet,
@@ -80,28 +96,29 @@ export default function GymModeScreen() {
     return [];
   });
 
+  const exerciseNames = activeWorkout?.map((w) => w.exercise.name).join(',') || '';
+  const currentRoutineKey = `${activeSessionId}|${activeBriefing?.workoutName || ''}|${exerciseNames}`;
+
   const loadedWorkoutKeyRef = useRef<string>(
-    activeWorkout && activeWorkout.length > 0
-      ? `${activeBriefing?.workoutName || ''}-${activeWorkout.map((w) => w.exercise.name).join(',')}`
-      : ''
+    activeWorkout && activeWorkout.length > 0 ? currentRoutineKey : ''
   );
   const sessionStartedAtRef = useRef<number>(Date.now());
 
   useEffect(() => {
     if (activeWorkout && activeWorkout.length > 0) {
-      const currentRoutineKey = `${activeBriefing?.workoutName || ''}-${activeWorkout.map((w) => w.exercise.name).join(',')}`;
-      if (loadedWorkoutKeyRef.current !== currentRoutineKey) {
-        loadedWorkoutKeyRef.current = currentRoutineKey;
+      const reloadKey = `${activeSessionId}|${activeBriefing?.workoutName || ''}|${exerciseNames}`;
+      if (loadedWorkoutKeyRef.current !== reloadKey) {
+        loadedWorkoutKeyRef.current = reloadKey;
         sessionStartedAtRef.current = Date.now();
         setExercises(workoutToGym(activeWorkout));
         setCurrentExIndex(0);
         setActiveSetIndex(0);
       }
     }
-  }, [activeWorkout, activeBriefing?.workoutName]);
+  }, [activeSessionId, activeBriefing?.workoutName, exerciseNames, activeWorkout]);
 
   const [currentExIndex, setCurrentExIndex] = useState(0);
-  const [activeSetIndex, setActiveSetIndex] = useState(1);
+  const [activeSetIndex, setActiveSetIndex] = useState(0);
 
   // Modals & Expanders State
   const [showCues, setShowCues] = useState(false);
