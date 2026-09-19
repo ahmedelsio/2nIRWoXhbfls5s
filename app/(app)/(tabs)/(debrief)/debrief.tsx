@@ -42,11 +42,45 @@ export default function NightDebriefScreen() {
   const [copied, setCopied] = useState(false);
   const { activeDebrief, isDebriefFromLiveSession } = useDataFactory();
 
+  if (!isDebriefFromLiveSession) {
+    return (
+      <>
+        <Stack.Screen options={{
+          header: () => (
+            <View style={[styles.topBar, { paddingTop: insets.top }]}>
+              <MaskedGlassBG />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.topBarLabel}>SESSION RECAP</Text>
+                <Text style={styles.topBarTitle}>Night Debrief</Text>
+              </View>
+            </View>
+          ),
+        }} />
+        <View style={[styles.emptyContainer, { paddingTop: insets.top + 40 }]}>
+          <Text style={styles.emptyText}>
+            No session finished yet. Complete a workout in Gym Mode to see tonnage, grade, and PRs.
+          </Text>
+          <TouchableOpacity 
+            style={styles.emptyBtn} 
+            onPress={() => {
+              Haptics.selectionAsync();
+              router.push('/(app)/(tabs)/(gym)/gym' as any);
+            }}
+            activeOpacity={0.88}
+          >
+            <Text style={styles.emptyBtnText}>Go to Gym Mode</Text>
+          </TouchableOpacity>
+        </View>
+      </>
+    );
+  }
+
   const debrief = activeDebrief;
+  const gradeDisplay = debrief.sessionGrade ? debrief.sessionGrade : '—';
 
   const sessionData = {
     workoutName: debrief.workoutName,
-    grade: debrief.sessionGrade || 'A',
+    grade: gradeDisplay,
     gradeReason: debrief.gradeReason,
     tonnageKg: debrief.totalVolumeKg,
     setsCompleted: debrief.setsCompleted,
@@ -158,16 +192,9 @@ export default function NightDebriefScreen() {
             </View>
           ))
         ) : (
-          <View style={styles.prCard}>
-            <View style={styles.prHeader}>
-              <View style={styles.prBadge}>
-                <Text style={styles.prBadgeText}>VOLUME ACCUMULATION</Text>
-              </View>
-              <Text style={styles.prValue}>On Target</Text>
-            </View>
-            <Text style={styles.prExercise}>Progressive Overload Maintained</Text>
-            <Text style={styles.prDetail}>All prescribed sets logged cleanly within targeted RIR thresholds.</Text>
-          </View>
+          <Text style={{ color: '#71717a', fontSize: 13, paddingVertical: 12, paddingHorizontal: 4 }}>
+            No PRs this session
+          </Text>
         )}
 
         {/* Volume Landmarks by Muscle */}
@@ -516,6 +543,31 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
     color: '#a1a1aa',
     fontSize: 11,
     fontWeight: '600',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+    backgroundColor: '#09090b',
+  },
+  emptyText: {
+    color: '#a1a1aa',
+    fontSize: 15,
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 20,
+  },
+  emptyBtn: {
+    backgroundColor: '#ccff00',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  emptyBtnText: {
+    color: '#09090b',
+    fontSize: 14,
+    fontWeight: '800',
   },
   });
 }
