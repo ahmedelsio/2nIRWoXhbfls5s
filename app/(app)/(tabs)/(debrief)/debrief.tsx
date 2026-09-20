@@ -4,24 +4,24 @@
  * Session scoring, automatic PR detection, tomorrow preview & viral story cards
  */
 import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  ScrollView, 
-  TouchableOpacity, 
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
   StyleSheet,
-  Share 
+  Share
 } from 'react-native';
 import { router, Stack } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { 
-  Trophy, 
-  Sparkles, 
-  Share2, 
-  Check, 
-  Clock, 
-  TrendingUp, 
-  Calendar, 
+import {
+  Trophy,
+  Sparkles,
+  Share2,
+  Check,
+  Clock,
+  TrendingUp,
+  Calendar,
   ArrowRight,
   ShieldCheck,
   Dumbbell,
@@ -56,17 +56,17 @@ export default function NightDebriefScreen() {
             </View>
           ),
         }} />
-        <View style={[styles.emptyContainer, { paddingTop: insets.top + 40 }]}>
+        <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>
             No session finished yet. Complete a workout in Gym Mode to see tonnage, grade, and PRs.
           </Text>
-          <TouchableOpacity 
-            style={styles.emptyBtn} 
+          <TouchableOpacity
+            style={styles.emptyBtn}
             onPress={() => {
               Haptics.selectionAsync();
               router.push('/(app)/(tabs)/(gym)/gym' as any);
             }}
-            activeOpacity={0.88}
+            activeOpacity={0.8}
           >
             <Text style={styles.emptyBtnText}>Go to Gym Mode</Text>
           </TouchableOpacity>
@@ -145,7 +145,7 @@ export default function NightDebriefScreen() {
           </View>
         ),
       }} />
-      <ScrollView contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top }]} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.scrollContent, { gap: Spacing.two, paddingTop: insets.top }]} showsVerticalScrollIndicator={false}>
         {/* Grade Card */}
         <View style={styles.gradeCard}>
           <View style={styles.gradeCircle}>
@@ -181,7 +181,7 @@ export default function NightDebriefScreen() {
 
         {/* PR Trophy Cards */}
         <View style={styles.sectionHeader}>
-          <Trophy size={16} color="#ccff00" />
+          <Trophy size={16} color={theme.accent} />
           <Text style={styles.sectionTitle}>AUTOMATIC PR TROPHY VAULT</Text>
         </View>
 
@@ -236,14 +236,14 @@ export default function NightDebriefScreen() {
           <Text style={styles.tomorrowTitle}>{sessionData.tomorrow.name}</Text>
           <Text style={styles.tomorrowDesc}>{sessionData.tomorrow.description}</Text>
           <View style={styles.sleepBadge}>
-            <Sparkles size={12} color="#ccff00" />
+            <Sparkles size={12} color={theme.accent} />
             <Text style={styles.sleepText}>{sessionData.tomorrow.sleepTarget}</Text>
           </View>
         </View>
 
         {/* Share Story Card Button */}
-        <TouchableOpacity 
-          style={styles.shareBtn} 
+        <TouchableOpacity
+          style={styles.shareBtn}
           onPress={handleShareStory}
           activeOpacity={0.88}
         >
@@ -267,314 +267,330 @@ export default function NightDebriefScreen() {
 
 function createStyles(theme: ReturnType<typeof useTheme>) {
   return createThemeStyles(theme, {
-  container: {
-    flex: 1,
-    backgroundColor: '#09090b',
-  },
-  scrollContent: {
-    paddingTop: 16,
-    paddingHorizontal: Spacing.two,
-    paddingBottom: 40,
-  },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingBottom: 10,
-  },
-  topBarLabel: {
-    fontSize: 10,
-    color: '#ccff00',
-    fontWeight: '900',
-    letterSpacing: 1,
-  },
-  topBarTitle: {
-    fontSize: 20,
-    color: '#ffffff',
-    fontWeight: '900',
-    marginTop: 2,
-  },
-  header: {
-    marginBottom: 16,
-  },
-  dateText: {
-    fontSize: 10,
-    color: '#71717a',
-    fontWeight: '700',
-    letterSpacing: 1,
-  },
-  titleText: {
-    fontSize: 28,
-    color: '#ffffff',
-    fontWeight: '900',
-    marginTop: 2,
-  },
-  gradeCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#18181b',
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#27272a',
-    padding: 18,
-    marginBottom: 16,
-  },
-  gradeCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: '#ccff00',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  gradeLetter: {
-    fontSize: 34,
-    color: '#09090b',
-    fontWeight: '900',
-  },
-  gradeBadge: {
-    backgroundColor: '#ccff0020',
-    alignSelf: 'flex-start',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
-    marginBottom: 4,
-  },
-  gradeBadgeText: {
-    color: '#ccff00',
-    fontSize: 9,
-    fontWeight: '900',
-    letterSpacing: 0.5,
-  },
-  gradeTitle: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '800',
-  },
-  gradeReason: {
-    color: '#a1a1aa',
-    fontSize: 12,
-    lineHeight: 16,
-    marginTop: 2,
-  },
-  metricGrid: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 20,
-  },
-  metricBox: {
-    flex: 1,
-    backgroundColor: '#18181b',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#27272a',
-    padding: 12,
-  },
-  metricLabel: {
-    fontSize: 9,
-    color: '#71717a',
-    fontWeight: '800',
-    letterSpacing: 0.5,
-  },
-  metricVal: {
-    color: '#ffffff',
-    fontSize: 18,
-    fontWeight: '900',
-    marginTop: 4,
-  },
-  metricUnit: {
-    fontSize: 11,
-    color: '#ccff00',
-  },
-  metricSub: {
-    color: '#71717a',
-    fontSize: 10,
-    marginTop: 2,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 10,
-    marginTop: 6,
-  },
-  sectionTitle: {
-    fontSize: 11,
-    color: '#71717a',
-    fontWeight: '800',
-    letterSpacing: 1,
-  },
-  prCard: {
-    backgroundColor: '#1c1f13',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#ccff00',
-    padding: 14,
-    marginBottom: 10,
-  },
-  prHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  prBadge: {
-    backgroundColor: '#ccff00',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  prBadgeText: {
-    color: '#09090b',
-    fontSize: 9,
-    fontWeight: '900',
-  },
-  prValue: {
-    color: '#ccff00',
-    fontSize: 15,
-    fontWeight: '900',
-  },
-  prExercise: {
-    color: '#ffffff',
-    fontSize: 15,
-    fontWeight: '800',
-  },
-  prDetail: {
-    color: '#a1a1aa',
-    fontSize: 11,
-    marginTop: 2,
-  },
-  landmarksCard: {
-    backgroundColor: '#18181b',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#27272a',
-    padding: 14,
-    marginBottom: 16,
-    gap: 10,
-  },
-  landmarkRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingBottom: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#27272a',
-  },
-  landmarkMuscle: {
-    color: '#ffffff',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  landmarkStatus: {
-    color: '#71717a',
-    fontSize: 11,
-  },
-  landmarkSets: {
-    color: '#38bdf8',
-    fontSize: 13,
-    fontWeight: '800',
-  },
-  tomorrowCard: {
-    backgroundColor: '#18181b',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#27272a',
-    padding: 16,
-    marginBottom: 20,
-  },
-  tomorrowHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 6,
-  },
-  tomorrowType: {
-    color: '#ccff00',
-    fontSize: 10,
-    fontWeight: '900',
-  },
-  tomorrowTiming: {
-    color: '#71717a',
-    fontSize: 11,
-  },
-  tomorrowTitle: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '800',
-    marginBottom: 4,
-  },
-  tomorrowDesc: {
-    color: '#a1a1aa',
-    fontSize: 12,
-    lineHeight: 16,
-    marginBottom: 10,
-  },
-  sleepBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#09090b',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-    alignSelf: 'flex-start',
-  },
-  sleepText: {
-    color: '#d4d4d8',
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  shareBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: '#ccff00',
-    borderRadius: 14,
-    paddingVertical: 14,
-    marginBottom: 14,
-  },
-  shareBtnText: {
-    color: '#09090b',
-    fontSize: 15,
-    fontWeight: '900',
-  },
-  streakFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 10,
-  },
-  streakText: {
-    color: '#a1a1aa',
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 32,
-    backgroundColor: '#09090b',
-  },
-  emptyText: {
-    color: '#a1a1aa',
-    fontSize: 15,
-    textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: 20,
-  },
-  emptyBtn: {
-    backgroundColor: '#ccff00',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 12,
-  },
-  emptyBtnText: {
-    color: '#09090b',
-    fontSize: 14,
-    fontWeight: '800',
-  },
+    container: {
+      flex: 1,
+      backgroundColor: theme.background,
+    },
+    scrollContent: {
+      paddingTop: 16,
+      paddingHorizontal: Spacing.two,
+      paddingBottom: 40,
+    },
+    topBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      paddingBottom: 10,
+    },
+    topBarLabel: {
+      fontSize: 10,
+      color: theme.accent,
+      fontWeight: '900',
+      letterSpacing: 1,
+    },
+    topBarTitle: {
+      fontSize: 20,
+      color: theme.text,
+      fontWeight: '900',
+      marginTop: 2,
+    },
+    header: {
+      marginBottom: 16,
+    },
+    dateText: {
+      fontSize: 10,
+      color: theme.textMuted,
+      fontWeight: '700',
+      letterSpacing: 1,
+    },
+    titleText: {
+      fontSize: 28,
+      color: theme.text,
+      fontWeight: '900',
+      marginTop: 2,
+    },
+
+    // ── Grade Card ──────────────────────────────────
+    gradeCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.bgElevated,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: theme.borderSubtle, // ← main cards
+      padding: 18,
+      marginBottom: 16,
+    },
+    gradeCircle: {
+      width: 64,
+      height: 64,
+      borderRadius: 32,
+      backgroundColor: theme.accent,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    gradeLetter: {
+      fontSize: 34,
+      color: theme.background,
+      fontWeight: '900',
+    },
+    gradeBadge: {
+      backgroundColor: theme.accent + '20',
+      alignSelf: 'flex-start',
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: 6,
+      marginBottom: 4,
+    },
+    gradeBadgeText: {
+      color: theme.accent,
+      fontSize: 9,
+      fontWeight: '900',
+      letterSpacing: 0.5,
+    },
+    gradeTitle: {
+      color: theme.text,
+      fontSize: 16,
+      fontWeight: '800',
+    },
+    gradeReason: {
+      color: theme.textSecondary,
+      fontSize: 12,
+      lineHeight: 16,
+      marginTop: 2,
+    },
+
+    // ── Metrics ─────────────────────────────────────
+    metricGrid: {
+      flexDirection: 'row',
+      gap: 8,
+      marginBottom: 20,
+    },
+    metricBox: {
+      flex: 1,
+      backgroundColor: theme.bgElevated,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: theme.borderSubtle, // ← main cards
+      padding: 12,
+    },
+    metricLabel: {
+      fontSize: 9,
+      color: theme.textMuted,
+      fontWeight: '800',
+      letterSpacing: 0.5,
+    },
+    metricVal: {
+      color: theme.text,
+      fontSize: 18,
+      fontWeight: '900',
+      marginTop: 4,
+    },
+    metricUnit: {
+      fontSize: 11,
+      color: theme.accent,
+    },
+    metricSub: {
+      color: theme.textMuted,
+      fontSize: 10,
+      marginTop: 2,
+    },
+
+    // ── Section Header ──────────────────────────────
+    sectionHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      marginBottom: 10,
+      marginTop: 6,
+    },
+    sectionTitle: {
+      fontSize: 11,
+      color: theme.textMuted,
+      fontWeight: '800',
+      letterSpacing: 1,
+    },
+
+    // ── PR Card ─────────────────────────────────────
+    prCard: {
+      backgroundColor: theme.accent + '11',
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: theme.accent,
+      padding: 14,
+      marginBottom: 10,
+    },
+    prHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 4,
+    },
+    prBadge: {
+      backgroundColor: theme.accent,
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: 4,
+    },
+    prBadgeText: {
+      color: theme.background,
+      fontSize: 9,
+      fontWeight: '900',
+    },
+    prValue: {
+      color: theme.accent,
+      fontSize: 15,
+      fontWeight: '900',
+    },
+    prExercise: {
+      color: theme.text,
+      fontSize: 15,
+      fontWeight: '800',
+    },
+    prDetail: {
+      color: theme.textSecondary,
+      fontSize: 11,
+      marginTop: 2,
+    },
+
+    // ── Landmarks ───────────────────────────────────
+    landmarksCard: {
+      backgroundColor: theme.bgElevated,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: theme.borderSubtle, // ← main cards
+      padding: 14,
+      marginBottom: 16,
+      gap: 10,
+    },
+    landmarkRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingBottom: 8,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.border,
+    },
+    landmarkMuscle: {
+      color: theme.text,
+      fontSize: 13,
+      fontWeight: '700',
+    },
+    landmarkStatus: {
+      color: theme.textMuted,
+      fontSize: 11,
+    },
+    landmarkSets: {
+      color: '#38bdf8', // keep sky blue accent
+      fontSize: 13,
+      fontWeight: '800',
+    },
+
+    // ── Tomorrow Card ───────────────────────────────
+    tomorrowCard: {
+      backgroundColor: theme.bgElevated,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: theme.borderSubtle, // ← main cards
+      padding: 16,
+      marginBottom: 20,
+    },
+    tomorrowHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginBottom: 6,
+    },
+    tomorrowType: {
+      color: theme.accent,
+      fontSize: 10,
+      fontWeight: '900',
+    },
+    tomorrowTiming: {
+      color: theme.textMuted,
+      fontSize: 11,
+    },
+    tomorrowTitle: {
+      color: theme.text,
+      fontSize: 16,
+      fontWeight: '800',
+      marginBottom: 4,
+    },
+    tomorrowDesc: {
+      color: theme.textSecondary,
+      fontSize: 12,
+      lineHeight: 16,
+      marginBottom: 10,
+    },
+    sleepBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      backgroundColor: theme.background,
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      borderRadius: 8,
+      alignSelf: 'flex-start',
+    },
+    sleepText: {
+      color: theme.textSecondary,
+      fontSize: 11,
+      fontWeight: '700',
+    },
+
+    // ── Share + Streak ──────────────────────────────
+    shareBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      backgroundColor: theme.accent,
+      borderRadius: 14,
+      paddingVertical: 14,
+      marginBottom: 14,
+    },
+    shareBtnText: {
+      color: theme.background,
+      fontSize: 15,
+      fontWeight: '900',
+    },
+    streakFooter: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      paddingVertical: 10,
+    },
+    streakText: {
+      color: theme.textSecondary,
+      fontSize: 11,
+      fontWeight: '600',
+    },
+
+    // ── Empty State ─────────────────────────────────
+    emptyContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: 32,
+      backgroundColor: theme.background,
+    },
+    emptyText: {
+      color: theme.textSecondary,
+      fontSize: 15,
+      textAlign: 'center',
+      lineHeight: 22,
+      marginBottom: 20,
+    },
+    emptyBtn: {
+      backgroundColor: theme.accent,
+      paddingHorizontal: 20,
+      paddingVertical: Spacing.three,
+      borderRadius: 12,
+    },
+    emptyBtnText: {
+      color: theme.background,
+      fontSize: 14,
+      fontWeight: '800',
+    },
   });
 }

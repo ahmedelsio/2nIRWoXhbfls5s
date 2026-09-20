@@ -49,6 +49,7 @@ import {
   type ExercisePreview,
   getRoutineSession,
 } from '@/src/data/programCatalog';
+import { PrimaryCard } from '@/src/components/UIElements';
 
 export default function TodayScreen() {
   const theme = useTheme();
@@ -135,7 +136,7 @@ export default function TodayScreen() {
                     setShowScheduleModal(true);
                   }}
                 >
-                  <RotateCcw size={12} color="#ccff00" />
+                  <RotateCcw size={12} color={theme.accent} />
                   <Text style={styles.changeBtnText}>Change</Text>
                 </TouchableOpacity>
               </View>
@@ -143,42 +144,33 @@ export default function TodayScreen() {
           </View>
         ),
       }} />
-      <ScrollView contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 16 }]} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.scrollContent, { gap: Spacing.two, paddingTop: insets.top + 16 }]} showsVerticalScrollIndicator={false}>
         {/* TIME-OF-DAY HERO GREETING (Exact Simulator Match) */}
         <View style={styles.heroGreeting}>
           {/* Block Progress Card Button */}
           <TouchableOpacity
-            style={styles.blockCard}
             onPress={() => {
               Haptics.selectionAsync();
               setShowBlockModal(true);
             }}
+            activeOpacity={0.8}
           >
-            <View style={styles.blockCardTop}>
-              <Text style={styles.blockCardLabel}>BLOCK PROGRESS</Text>
-              <Sparkles size={11} color="#ccff00" />
-            </View>
-            <Text style={styles.blockCardValue}>{current.badge}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => {
-              Haptics.selectionAsync();
-              setShowScheduleModal(true);
-            }}
-            style={styles.rotationHint}
-          >
-            <Text style={styles.rotationHintText}>
-              Determined by your 5-day PPL rotation • <Text style={{ textDecorationLine: 'underline' }}>View or edit schedule</Text>
-            </Text>
+            <PrimaryCard style={{ flexDirection: 'row', justifyContent: "space-between", alignItems: 'center' }}>
+              <View style={styles.blockCardTop}>
+                <Text style={styles.blockCardLabel}>BLOCK PROGRESS</Text>
+                <Sparkles size={11} color={theme.accent} />
+              </View>
+              <Text style={styles.blockCardValue}>{current.badge}</Text>
+            </PrimaryCard>
           </TouchableOpacity>
         </View>
 
         {/* READINESS & SLEEP INSIGHT CARD (Exact Simulator Match) */}
-        <View style={styles.readinessCard}>
+        <PrimaryCard>
           <View style={styles.readinessHeader}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
               <View style={styles.moonIconBox}>
-                <Moon size={22} color="#ccff00" />
+                <Moon size={22} color={theme.accent} />
               </View>
               <View>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -196,7 +188,7 @@ export default function TodayScreen() {
           {/* Coach Prescription Bubble */}
           <View style={styles.coachPrescription}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Sparkles size={14} color="#ccff00" />
+              <Sparkles size={14} color={theme.accent} />
               <Text style={styles.coachHeading}>COACH PRESCRIPTION</Text>
             </View>
             <Text style={styles.coachBodyText}>{current.brief}</Text>
@@ -204,16 +196,16 @@ export default function TodayScreen() {
           <View style={styles.wearableBadge}>
             <Text style={styles.wearableBadgeText}>Wearable Synced</Text>
           </View>
-        </View>
+        </PrimaryCard>
 
         {/* WORKOUT BLUEPRINT AT A GLANCE (Exact Simulator Match) */}
-        <View style={styles.blueprintCard}>
+        <PrimaryCard>
           <View style={styles.blueprintTop}>
             <Text style={styles.blueprintTitle}>SCHEDULED BLUEPRINT</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <Clock size={14} color="#ccff00" />
+              <Clock size={14} color={theme.accent} />
               <Text style={styles.blueprintDuration}>
-                <Text style={{ fontWeight: '900', color: '#ffffff' }}>{current.duration}</Text> estimated
+                <Text style={{ fontWeight: '900', color: '#ffffff' }}>{current.duration}</Text> Estimated
               </Text>
             </View>
           </View>
@@ -226,7 +218,7 @@ export default function TodayScreen() {
               <Text style={styles.primaryLiftTarget}>{current.primaryTarget}</Text>
             </View>
             <View style={styles.liftIconBox}>
-              <Dumbbell size={20} color="#ccff00" />
+              <Dumbbell size={20} color={theme.accent} />
             </View>
           </View>
 
@@ -239,24 +231,23 @@ export default function TodayScreen() {
               </View>
             ))}
           </View>
-        </View>
+        </PrimaryCard>
 
         {/* TODAY'S EXERCISE SEQUENCE PREVIEW */}
         <View style={styles.sequenceSection}>
-          <View style={styles.sequenceHeader}>
-            <Text style={styles.sequenceTitle}>PRESCRIBED EXERCISE SEQUENCE</Text>
-            <Text style={styles.sequenceCount}>{current.exercises.length} Movements</Text>
-          </View>
-
-          <View style={styles.sequenceList}>
+          <PrimaryCard style={{ padding: 0 }}>
+            <View style={[styles.sequenceHeader, { padding: 16 }]}>
+              <Text style={styles.sequenceTitle}>PRESCRIBED EXERCISE SEQUENCE</Text>
+              <Text style={styles.sequenceCount}>{current.exercises.length} Movements</Text>
+            </View>
             {current.exercises.map((ex, idx) => (
-              <View key={idx} style={styles.sequenceItem}>
+              <View key={idx} style={[styles.sequenceItem, idx === current.exercises.length - 1 && { borderBottomWidth: 0 }]}>
                 <View style={styles.sequenceIndex}>
                   <Text style={styles.sequenceIndexText}>0{idx + 1}</Text>
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.sequenceName}>{ex.name}</Text>
-                  <Text style={styles.sequenceSets}>{ex.sets} • <Text style={{ color: '#ccff00', fontWeight: '800' }}>{ex.target}</Text></Text>
+                  <Text style={styles.sequenceSets}>{ex.sets} • <Text style={{ color: theme.accent, fontWeight: '800' }}>{ex.target}</Text></Text>
                   <Text style={styles.sequenceNote}>{ex.note}</Text>
                 </View>
                 {ex.isCompound && (
@@ -266,7 +257,7 @@ export default function TodayScreen() {
                 )}
               </View>
             ))}
-          </View>
+          </PrimaryCard>
         </View>
 
         {/* ONE PRIMARY CTA + 2 REALITY ADAPTATIONS (Exact Simulator Match) */}
@@ -277,7 +268,7 @@ export default function TodayScreen() {
             onPress={handleStartGym}
             activeOpacity={0.88}
           >
-            <Play size={20} color="#09090b" fill="#09090b" />
+            <Play size={20} color="#000" fill="#000" />
             <Text style={styles.mainStartBtnText}>Start Gym Mode</Text>
           </TouchableOpacity>
 
@@ -288,7 +279,7 @@ export default function TodayScreen() {
               onPress={handleSwapCrowded}
               activeOpacity={0.8}
             >
-              <Zap size={16} color="#ccff00" />
+              <Zap size={16} color={theme.accent} />
               <Text style={styles.adaptBtnTitle}>30-Min Crowded Gym</Text>
               <Text style={styles.adaptBtnSub}>Dumbbell superset version</Text>
             </TouchableOpacity>
@@ -310,17 +301,32 @@ export default function TodayScreen() {
       {/* SCHEDULE MANAGER MODAL (Change Today's Session) */}
       <Modal visible={showScheduleModal} presentationStyle='formSheet' allowSwipeDismissal animationType='slide' onRequestClose={() => setShowScheduleModal(false)}>
         <View style={styles.modalContent}>
-          <View style={styles.modalHeader}>
+          <View style={[styles.modalHeader, { zIndex: 9 }]}>
+            <MaskedGlassBG />
             <View>
               <Text style={styles.modalTitle}>Weekly Schedule & Routine</Text>
               <Text style={styles.modalSub}>Select which session to load for today's brief</Text>
             </View>
-            <TouchableOpacity onPress={() => setShowScheduleModal(false)}>
+            <TouchableOpacity
+              style={{
+                width: 34,
+                height: 34,
+                borderRadius: 17,
+                backgroundColor: '#18181b',
+                borderWidth: 1,
+                borderColor: '#27272a',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              onPress={() => setShowScheduleModal(false)}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              activeOpacity={0.8}
+            >
               <X size={20} color="#a1a1aa" />
             </TouchableOpacity>
           </View>
 
-          <ScrollView style={{ maxHeight: 380 }} showsVerticalScrollIndicator={false}>
+          <ScrollView style={{ flex: 1, overflow: 'visible' }} contentContainerStyle={{ paddingHorizontal: Spacing.three }} showsVerticalScrollIndicator={false}>
             {(Object.keys(ROUTINE_CONFIGS) as RoutineType[]).map((key) => {
               const conf = ROUTINE_CONFIGS[key];
               const isSelected = activeRoutine === key;
@@ -333,27 +339,32 @@ export default function TodayScreen() {
                     commitRoutine(key);
                     setShowScheduleModal(false);
                   }}
+                  activeOpacity={0.8}
                 >
                   <View style={{ flex: 1 }}>
-                    <Text style={[styles.scheduleOptionName, isSelected && { color: '#ccff00' }]}>
+                    <Text style={[styles.scheduleOptionName, isSelected && { color: theme.accent }]}>
                       {conf.displayName}
                     </Text>
                     <Text style={styles.scheduleOptionSub}>
                       {conf.duration} • {conf.primaryLift}
                     </Text>
                   </View>
-                  {isSelected && <CheckCircle2 size={18} color="#ccff00" />}
+                  {isSelected && <CheckCircle2 size={18} color={theme.accent} />}
                 </TouchableOpacity>
               );
             })}
           </ScrollView>
 
-          <TouchableOpacity
-            style={styles.modalCloseBtn}
-            onPress={() => setShowScheduleModal(false)}
-          >
-            <Text style={styles.modalCloseBtnText}>Close Schedule</Text>
-          </TouchableOpacity>
+          <View style={{ paddingHorizontal: Spacing.three }}>
+            <TouchableOpacity
+              style={styles.modalCloseBtn}
+              onPress={() => setShowScheduleModal(false)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.modalCloseBtnText}>Close Schedule</Text>
+            </TouchableOpacity>
+          </View>
+
         </View>
       </Modal>
 
@@ -365,34 +376,52 @@ export default function TodayScreen() {
               <Text style={styles.modalTitle}>Block Periodization Status</Text>
               <Text style={styles.modalSub}>Evidence-based mesocycle progression wave</Text>
             </View>
-            <TouchableOpacity onPress={() => setShowBlockModal(false)}>
+            <TouchableOpacity
+              style={{
+                width: 34,
+                height: 34,
+                borderRadius: 17,
+                backgroundColor: '#18181b',
+                borderWidth: 1,
+                borderColor: '#27272a',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              onPress={() => setShowBlockModal(false)}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              activeOpacity={0.8}
+            >
               <X size={20} color="#a1a1aa" />
             </TouchableOpacity>
           </View>
 
-          <View style={styles.blockDetailBox}>
+          <View style={[styles.blockDetailBox, { gap: Spacing.two, paddingHorizontal: Spacing.three }]}>
             <Text style={styles.blockHeading}>CURRENT PHASE: VOLUME ACCUMULATION</Text>
             <Text style={styles.blockBody}>
-              You are on <Text style={{ color: '#ccff00', fontWeight: '800' }}>Week 3 of a 6-week cycle</Text>.
+              You are on <Text style={{ color: theme.accent, fontWeight: '800' }}>Week 3 of a 6-week cycle</Text>.
               Sets per muscle group are ramping from MEV (Minimum Effective Volume) toward MAV (Maximum Adaptive Volume).
             </Text>
 
             <View style={styles.blockWaveRow}>
-              <View style={styles.waveStep}>
-                <Text style={styles.waveStepLabel}>W1–W2</Text>
-                <Text style={styles.waveStepVal}>Baseline</Text>
+              <View style={{ flexDirection: "row", gap: Spacing.two }}>
+                <View style={styles.waveStep}>
+                  <Text style={styles.waveStepLabel}>W1–W2</Text>
+                  <Text style={styles.waveStepVal}>Baseline</Text>
+                </View>
+                <View style={[styles.waveStep, { borderColor: theme.accent, backgroundColor: '#ccff0020' }]}>
+                  <Text style={[styles.waveStepLabel, { color: theme.accent }]}>W3–W4 (Current)</Text>
+                  <Text style={[styles.waveStepVal, { color: theme.accent }]}>Overload (+2.5kg)</Text>
+                </View>
               </View>
-              <View style={[styles.waveStep, { borderColor: '#ccff00', backgroundColor: '#ccff0020' }]}>
-                <Text style={[styles.waveStepLabel, { color: '#ccff00' }]}>W3–W4 (Current)</Text>
-                <Text style={[styles.waveStepVal, { color: '#ccff00' }]}>Overload (+2.5kg)</Text>
-              </View>
-              <View style={styles.waveStep}>
-                <Text style={styles.waveStepLabel}>W5</Text>
-                <Text style={styles.waveStepVal}>Peak Volume</Text>
-              </View>
-              <View style={styles.waveStep}>
-                <Text style={styles.waveStepLabel}>W6</Text>
-                <Text style={styles.waveStepVal}>Deload (-40%)</Text>
+              <View style={{ flexDirection: "row", gap: Spacing.two }}>
+                <View style={styles.waveStep}>
+                  <Text style={styles.waveStepLabel}>W5</Text>
+                  <Text style={styles.waveStepVal}>Peak Volume</Text>
+                </View>
+                <View style={styles.waveStep}>
+                  <Text style={styles.waveStepLabel}>W6</Text>
+                  <Text style={styles.waveStepVal}>Deload (-40%)</Text>
+                </View>
               </View>
             </View>
 
@@ -403,13 +432,15 @@ export default function TodayScreen() {
               </Text>
             </View>
           </View>
-
-          <TouchableOpacity
-            style={styles.modalCloseBtn}
-            onPress={() => setShowBlockModal(false)}
-          >
-            <Text style={styles.modalCloseBtnText}>Done</Text>
-          </TouchableOpacity>
+          <View style={{ paddingHorizontal: Spacing.three }}>
+            <TouchableOpacity
+              style={styles.modalCloseBtn}
+              onPress={() => setShowBlockModal(false)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.modalCloseBtnText}>Done</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </Modal>
     </>
@@ -417,10 +448,12 @@ export default function TodayScreen() {
 }
 
 function createStyles(theme: ReturnType<typeof useTheme>) {
+  const insets = useSafeAreaInsets();
+
   return createThemeStyles(theme, {
     container: {
       flex: 1,
-      backgroundColor: '#09090b',
+      backgroundColor: theme.background,
     },
     scrollContent: {
       paddingTop: 16,
@@ -433,23 +466,10 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
       paddingHorizontal: 16,
       paddingBottom: 10,
     },
-    topBarLabel: {
-      fontSize: 10,
-      color: '#ccff00',
-      fontWeight: '900',
-      letterSpacing: 1,
-    },
-    topBarTitle: {
-      fontSize: 20,
-      color: '#ffffff',
-      fontWeight: '900',
-      marginTop: 2,
-    },
     heroGreeting: {
       // flexDirection: 'row',
       justifyContent: 'space-between',
       // alignItems: 'flex-start',
-      marginBottom: 16,
     },
     timeTagRow: {
       flexDirection: 'row',
@@ -461,10 +481,10 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
       width: 6,
       height: 6,
       borderRadius: 3,
-      backgroundColor: '#4ade80',
+      backgroundColor: theme.success,
     },
     timeTagText: {
-      color: '#71717a',
+      color: theme.textMuted,
       fontSize: 10,
       fontWeight: '800',
       letterSpacing: 1,
@@ -477,26 +497,26 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
     },
     headlineTitle: {
       fontSize: 24,
-      color: '#ffffff',
+      color: theme.text,
       fontWeight: '900',
       letterSpacing: -0.5,
     },
     accentText: {
-      color: '#ccff00',
+      color: theme.accent,
     },
     changeBtn: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 4,
-      backgroundColor: '#18181b',
+      backgroundColor: theme.bgElevated,
       borderWidth: 1,
-      borderColor: '#27272a',
+      borderColor: theme.border,
       paddingHorizontal: 8,
       paddingVertical: 3,
       borderRadius: 8,
     },
     changeBtnText: {
-      color: '#ccff00',
+      color: theme.text,
       fontSize: 11,
       fontWeight: '700',
     },
@@ -504,19 +524,9 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
       marginTop: 4,
     },
     rotationHintText: {
-      color: '#71717a',
+      color: theme.textSecondary,
       fontSize: 11,
-    },
-    blockCard: {
-      flexDirection: 'row',
-      backgroundColor: '#18181b',
-      borderWidth: 1,
-      borderColor: '#27272a',
-      borderRadius: 14,
-      paddingVertical: 16,
-      paddingHorizontal: 8,
-      alignItems: 'center',
-      justifyContent: "space-between",
+      textAlign: "center"
     },
     blockCardTop: {
       flexDirection: 'row',
@@ -525,27 +535,14 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
       marginBottom: 2,
     },
     blockCardLabel: {
-      color: '#71717a',
-      fontSize: 9,
+      color: theme.text,
+      fontSize: 12,
       fontWeight: '800',
     },
     blockCardValue: {
-      color: '#ccff00',
+      color: theme.accent,
       fontSize: 12,
       fontWeight: '900',
-    },
-    blockCardSub: {
-      color: '#52525b',
-      fontSize: 9,
-      marginTop: 1,
-    },
-    readinessCard: {
-      backgroundColor: '#18181b',
-      borderRadius: 20,
-      borderWidth: 1,
-      borderColor: '#27272a',
-      padding: 16,
-      marginBottom: 16,
     },
     readinessHeader: {
       flexDirection: 'row',
@@ -556,9 +553,9 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
       width: 44,
       height: 44,
       borderRadius: 12,
-      backgroundColor: '#ccff0015',
+      backgroundColor: theme.accent + "11",
       borderWidth: 1,
-      borderColor: '#ccff0030',
+      borderColor: theme.accent + "22",
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -581,61 +578,49 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
       textAlign: 'center'
     },
     sleepSubText: {
-      color: '#a1a1aa',
+      color: theme.textSecondary,
       fontSize: 12,
       marginTop: 2,
     },
     loadBadge: {
-      backgroundColor: '#ccff0020',
+      backgroundColor: theme.accent + "11",
       borderWidth: 1,
-      borderColor: '#ccff0040',
+      borderColor: theme.accent + "22",
       paddingHorizontal: 8,
       paddingVertical: 4,
       borderRadius: 12,
     },
     loadBadgeText: {
-      color: '#ccff00',
+      color: theme.accent,
       fontSize: 10,
       fontWeight: '800',
     },
     coachPrescription: {
       marginTop: 14,
-      backgroundColor: '#09090b',
+      backgroundColor: theme.backgroundElement,
       borderRadius: 12,
       padding: 12,
-      borderWidth: 1,
-      borderColor: '#27272a',
     },
     coachHeading: {
-      color: '#ccff00',
+      color: theme.accent,
       fontSize: 11,
       fontWeight: '900',
       letterSpacing: 0.5,
     },
     coachBodyText: {
-      color: '#d4d4d8',
+      color: theme.textSecondary,
       fontSize: 12,
       lineHeight: 18,
       marginTop: 4,
-    },
-    blueprintCard: {
-      backgroundColor: '#18181b',
-      borderRadius: 20,
-      borderWidth: 1,
-      borderColor: '#27272a',
-      padding: 16,
-      marginBottom: 16,
     },
     blueprintTop: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
       paddingBottom: 12,
-      borderBottomWidth: 1,
-      borderBottomColor: '#27272a',
     },
     blueprintTitle: {
-      color: '#71717a',
+      color: theme.textSecondary,
       fontSize: 11,
       fontWeight: '800',
       letterSpacing: 1,
@@ -647,39 +632,35 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
     primaryLiftBox: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: '#09090b',
+      backgroundColor: theme.backgroundElement,
       borderRadius: 14,
       padding: 12,
-      borderWidth: 1,
-      borderColor: '#27272a',
       marginTop: 12,
     },
     primaryLiftLabel: {
-      color: '#71717a',
+      color: theme.textSecondary,
       fontSize: 9,
       fontWeight: '800',
     },
     primaryLiftName: {
-      color: '#ffffff',
+      color: theme.text,
       fontSize: 15,
       fontWeight: '900',
       marginTop: 2,
     },
     primaryLiftTarget: {
-      color: '#ccff00',
+      color: theme.accent,
       fontSize: 12,
       fontWeight: '800',
       marginTop: 2,
     },
     liftIconBox: {
-      width: 36,
-      height: 36,
+      width: 44,
+      height: 44,
       borderRadius: 10,
-      backgroundColor: '#18181b',
+      backgroundColor: theme.bgElevated,
       alignItems: 'center',
       justifyContent: 'center',
-      borderWidth: 1,
-      borderColor: '#27272a',
     },
     accessoryGrid: {
       flexDirection: 'row',
@@ -688,20 +669,18 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
     },
     accessoryCol: {
       flex: 1,
-      backgroundColor: '#09090b',
+      backgroundColor: theme.backgroundElement,
       borderRadius: 10,
       padding: 8,
       alignItems: 'center',
-      borderWidth: 1,
-      borderColor: '#27272a',
     },
     accessoryMuscle: {
-      color: '#71717a',
+      color: theme.textSecondary,
       fontSize: 10,
       fontWeight: '700',
     },
     accessorySets: {
-      color: '#ffffff',
+      color: theme.text,
       fontSize: 12,
       fontWeight: '800',
       marginTop: 2,
@@ -716,7 +695,7 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
       marginBottom: 10,
     },
     sequenceTitle: {
-      color: '#71717a',
+      color: theme.textSecondary,
       fontSize: 11,
       fontWeight: '800',
       letterSpacing: 1,
@@ -725,59 +704,52 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
       color: '#a1a1aa',
       fontSize: 11,
     },
-    sequenceList: {
-      backgroundColor: '#18181b',
-      borderRadius: 16,
-      borderWidth: 1,
-      borderColor: '#27272a',
-      overflow: 'hidden',
-    },
     sequenceItem: {
       flexDirection: 'row',
       alignItems: 'center',
       padding: 12,
       borderBottomWidth: 1,
-      borderBottomColor: '#27272a',
+      borderBottomColor: theme.border,
       gap: 12,
     },
     sequenceIndex: {
       width: 26,
       height: 26,
       borderRadius: 8,
-      backgroundColor: '#09090b',
+      backgroundColor: theme.backgroundElement,
       alignItems: 'center',
       justifyContent: 'center',
     },
     sequenceIndexText: {
-      color: '#71717a',
+      color: theme.textSecondary,
       fontSize: 10,
       fontWeight: '800',
     },
     sequenceName: {
-      color: '#ffffff',
+      color: theme.text,
       fontSize: 13,
       fontWeight: '800',
     },
     sequenceSets: {
-      color: '#a1a1aa',
+      color: theme.textSecondary,
       fontSize: 11,
       marginTop: 1,
     },
     sequenceNote: {
-      color: '#71717a',
+      color: theme.text,
       fontSize: 10,
       marginTop: 2,
     },
     compoundTag: {
-      backgroundColor: '#ccff0015',
+      backgroundColor: theme.accentSubtle,
       paddingHorizontal: 6,
       paddingVertical: 2,
       borderRadius: 4,
     },
     compoundTagText: {
-      color: '#ccff00',
-      fontSize: 8,
-      fontWeight: '900',
+      color: theme.accent,
+      fontSize: 9,
+      fontWeight: '700',
     },
     ctaSection: {
       gap: 16,
@@ -797,7 +769,7 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
       shadowOffset: { width: 0, height: 4 },
     },
     mainStartBtnText: {
-      color: '#09090b',
+      color: "#000",
       fontSize: 14,
       fontWeight: '900',
       textTransform: 'uppercase',
@@ -809,26 +781,26 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
     },
     adaptBtn: {
       flex: 1,
-      backgroundColor: '#18181b',
+      backgroundColor: theme.bgElevated,
       borderWidth: 1,
-      borderColor: '#27272a',
+      borderColor: theme.borderSubtle,
       borderRadius: 14,
       padding: 12,
       alignItems: 'center',
     },
     adaptBtnActive: {
-      borderColor: '#ccff00',
-      backgroundColor: '#1a1d13',
+      borderColor: theme.accent,
+      backgroundColor: theme.bgElevated,
     },
     adaptBtnTitle: {
-      color: '#ffffff',
+      color: theme.text,
       fontSize: 12,
       fontWeight: '800',
       marginTop: 6,
       textAlign: 'center',
     },
     adaptBtnSub: {
-      color: '#71717a',
+      color: theme.textSecondary,
       fontSize: 10,
       marginTop: 2,
       textAlign: 'center',
@@ -838,21 +810,19 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
     },
     modalContent: {
       flex: 1,
-      backgroundColor: '#18181b',
-      borderTopLeftRadius: 24,
-      borderTopRightRadius: 24,
-      borderWidth: 1,
-      borderColor: '#27272a',
-      padding: 20,
+      backgroundColor: theme.bgElevated,
+      paddingBottom: insets.bottom / 2
     },
     modalHeader: {
       flexDirection: 'row',
       justifyContent: 'space-between',
-      alignItems: 'flex-start',
+      alignItems: 'center',
       marginBottom: 16,
+      paddingHorizontal: Spacing.three,
+      paddingVertical: Spacing.four
     },
     modalTitle: {
-      color: '#ffffff',
+      color: theme.text,
       fontSize: 18,
       fontWeight: '900',
     },
@@ -867,79 +837,71 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
       alignItems: 'center',
       padding: 14,
       borderRadius: 12,
-      backgroundColor: '#09090b',
+      backgroundColor: theme.backgroundElement,
       borderWidth: 1,
-      borderColor: '#27272a',
+      borderColor: theme.borderSubtle,
       marginBottom: 8,
     },
     scheduleOptionActive: {
-      borderColor: '#ccff00',
-      backgroundColor: '#1a1d13',
+      borderColor: theme.accentSubtle,
+      backgroundColor: theme.backgroundSelected,
     },
     scheduleOptionName: {
-      color: '#ffffff',
+      color: theme.text,
       fontSize: 14,
       fontWeight: '800',
     },
     scheduleOptionSub: {
-      color: '#71717a',
+      color: theme.textSecondary,
       fontSize: 11,
       marginTop: 2,
     },
     modalCloseBtn: {
-      backgroundColor: '#27272a',
-      paddingVertical: 12,
+      backgroundColor: theme.backgroundSelected,
+      paddingVertical: Spacing.three,
       borderRadius: 12,
       alignItems: 'center',
-      marginTop: 10,
+      marginTop: Spacing.three,
     },
     modalCloseBtnText: {
-      color: '#ffffff',
+      color: theme.text,
       fontSize: 13,
       fontWeight: '800',
     },
     blockDetailBox: {
-      backgroundColor: '#09090b',
-      borderRadius: 16,
-      padding: 16,
-      borderWidth: 1,
-      borderColor: '#27272a',
-      marginBottom: 10,
+      flex: 1
     },
     blockHeading: {
-      color: '#ccff00',
-      fontSize: 11,
-      fontWeight: '900',
+      color: theme.accent,
+      fontSize: 14,
+      fontWeight: '700',
       letterSpacing: 0.5,
       marginBottom: 6,
     },
     blockBody: {
       color: '#d4d4d8',
-      fontSize: 13,
-      lineHeight: 18,
+      fontSize: 14,
+      lineHeight: 20,
     },
     blockWaveRow: {
-      flexDirection: 'row',
-      gap: 6,
+      gap: Spacing.two,
+      flexWrap: 'wrap',
       marginTop: 14,
     },
     waveStep: {
       flex: 1,
-      backgroundColor: '#18181b',
-      borderWidth: 1,
-      borderColor: '#27272a',
-      borderRadius: 10,
-      padding: 8,
+      backgroundColor: theme.backgroundElement,
+      borderRadius: 8,
+      padding: Spacing.three * 0.7,
       alignItems: 'center',
     },
     waveStepLabel: {
-      color: '#71717a',
-      fontSize: 9,
-      fontWeight: '800',
+      color: theme.accent,
+      fontSize: 12,
     },
     waveStepVal: {
-      color: '#a1a1aa',
-      fontSize: 10,
+      color: theme.text,
+      fontSize: 12,
       fontWeight: '700',
       marginTop: 2,
       textAlign: 'center',
@@ -948,14 +910,14 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
       flexDirection: 'row',
       gap: 6,
       alignItems: 'center',
-      backgroundColor: '#18181b',
+      backgroundColor: theme.backgroundElement,
       padding: 10,
       borderRadius: 10,
       marginTop: 12,
     },
     deloadNoteText: {
       flex: 1,
-      color: '#a1a1aa',
+      color: theme.textSecondary,
       fontSize: 11,
       lineHeight: 15,
     },

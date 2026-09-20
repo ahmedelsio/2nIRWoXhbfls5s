@@ -14,6 +14,18 @@ function isValidUUID(str: unknown): boolean {
   return typeof str === 'string' && UUID_REGEX.test(str);
 }
 
+function mapToSessionGrade(grade?: string | null): string | null {
+  if (!grade) return null;
+  const upper = String(grade).toUpperCase().trim();
+  if (upper === 'A+' || upper === 'A_PLUS') return 'A_plus';
+  if (upper === 'A') return 'A';
+  if (upper === 'B+' || upper === 'B_PLUS') return 'B_plus';
+  if (upper === 'B' || upper === 'B-') return 'B';
+  if (upper === 'C' || upper === 'C+' || upper === 'C-') return 'C';
+  if (upper === 'DELOAD') return 'deload';
+  return 'A';
+}
+
 /**
  * Sanitizes session payload strictly according to Supabase `public.sessions` table schema:
  * (id, user_id, program_id, program_day_id, name, status, started_at, completed_at,
@@ -32,9 +44,9 @@ function sanitizeSessionPayload(raw: any, authUserId?: string | null): Record<st
     status: raw.status || 'in_progress',
     started_at: raw.started_at || new Date().toISOString(),
     duration_minutes: raw.duration_minutes ?? (raw.duration_seconds ? Math.round(raw.duration_seconds / 60) : 0),
-    total_volume_kg: Number(raw.total_volume_kg ?? raw.total_tonnage_kg ?? 0),
+    total_volume_kg: Number(raw.total_volume_kg ?? (raw.total_tonnage_kg ? raw.total_tonnage_kg * 1000 : 0)),
     total_sets_completed: Number(raw.total_sets_completed ?? 0),
-    session_grade: raw.session_grade || 'A',
+    session_grade: mapToSessionGrade(raw.session_grade),
     grade_reason: raw.grade_reason || null,
     readiness_score: Number(raw.readiness_score ?? raw.readiness_score_at_start ?? 85),
     is_timeboxed: Boolean(raw.is_timeboxed),
@@ -159,7 +171,28 @@ export async function syncOfflineQueue(): Promise<SyncResult> {
     authUserId = session?.user?.id ?? null;
   } catch {}
 
-  // Process pending mutations sequentially
+  const syncedSessionIds = new Set<string>();
+  const skippedSetMutations: typeof pending = [];
+
+  const checkRemoteSession = async (sessionId?: string | null): Promise<boolean> => {
+    if (!sessionId || !isValidUUID(sessionId)) return false;
+    if (syncedSessionIds.has(sessionId)) return true;
+    try {
+      const { data, error } = await (supabase.from('sessions') as any)
+        .select('id')
+        .eq('id', sessionId)
+        .maybeSingle();
+      if (!error && data?.id) {
+        syncedSessionIds.add(sessionId);
+        return true;
+      }
+    } catch {
+      return false;
+    }
+    return false;
+  };
+
+  // Process pending mutations sequentially (FIFO)
   for (const mutation of pending) {
     LocalStore.updateMutationStatus(mutation.id, { status: 'syncing' });
 
@@ -174,6 +207,26 @@ export async function syncOfflineQueue(): Promise<SyncResult> {
 
     try {
       if (mutation.table === 'sets') {
+        const payloadRecord = mutation.payload as Record<string, any> | undefined;
+        const sessionId = typeof payloadRecord?.session_id === 'string' ? payloadRecord.session_id : undefined;
+
+        // Never apply a set mutation until a sessions create/upsert for that session_id
+        // has succeeded (or the row already exists remotely).
+        let sessionReady = sessionId ? syncedSessionIds.has(sessionId) : false;
+        if (!sessionReady && sessionId) {
+          sessionReady = await checkRemoteSession(sessionId);
+        }
+
+        if (!sessionReady) {
+          // Parent session does not exist remotely yet. Leave pending and continue other work.
+          LocalStore.updateMutationStatus(mutation.id, {
+            status: 'pending',
+            lastError: 'Deferred: Waiting for parent session to exist on Supabase.',
+          });
+          skippedSetMutations.push(mutation);
+          continue;
+        }
+
         if (mutation.mutationType === 'insert_set') {
           const payload = sanitizeSetPayload(mutation.payload, authUserId);
           let { error } = await (supabase.from('sets') as any).upsert(payload, {
@@ -214,18 +267,17 @@ export async function syncOfflineQueue(): Promise<SyncResult> {
           if (error) throw error;
         }
       } else if (mutation.table === 'sessions') {
+        const payloadRecord = mutation.payload as Record<string, any> | undefined;
+        const sessionId = typeof payloadRecord?.id === 'string' ? payloadRecord.id : undefined;
         if (mutation.mutationType === 'complete_session') {
           const raw = mutation.payload as Record<string, any>;
+          const clean = sanitizeSessionPayload(raw, authUserId);
+          const { id, user_id, created_at, ...updates } = clean;
           const { error } = await (supabase.from('sessions') as any)
-            .update({
-              status: 'completed',
-              completed_at: raw.completed_at || new Date().toISOString(),
-              duration_minutes: raw.duration_minutes ?? 0,
-              notes: raw.notes ?? null,
-              updated_at: new Date().toISOString(),
-            })
+            .update(updates)
             .eq('id', raw.id);
           if (error) throw error;
+          if (sessionId) syncedSessionIds.add(sessionId);
         } else {
           // create_session or general session upsert
           const payload = sanitizeSessionPayload(mutation.payload, authUserId);
@@ -233,6 +285,7 @@ export async function syncOfflineQueue(): Promise<SyncResult> {
             onConflict: 'id',
           });
           if (error) throw error;
+          if (sessionId) syncedSessionIds.add(sessionId);
         }
       } else if (mutation.table === 'profiles') {
         const raw = mutation.payload as Record<string, any>;
@@ -297,6 +350,71 @@ export async function syncOfflineQueue(): Promise<SyncResult> {
       console.warn(`[Ironmate SyncWorker] Mutation failed [${mutation.table}:${mutation.mutationType}]:`, errMsg);
       // Stop sequential drain if a blocking error occurs
       break;
+    }
+  }
+
+  // Retry skipped set mutations whose parent session was synced during this run
+  for (const mutation of skippedSetMutations) {
+    const payloadRecord = mutation.payload as Record<string, any> | undefined;
+    const sessionId = typeof payloadRecord?.session_id === 'string' ? payloadRecord.session_id : undefined;
+    const sessionReady = sessionId ? (syncedSessionIds.has(sessionId) || await checkRemoteSession(sessionId)) : false;
+    if (sessionReady) {
+      try {
+        LocalStore.updateMutationStatus(mutation.id, { status: 'syncing' });
+        if (mutation.mutationType === 'insert_set') {
+          const payload = sanitizeSetPayload(mutation.payload, authUserId);
+          let { error } = await (supabase.from('sets') as any).upsert(payload, {
+            onConflict: 'id',
+          });
+
+          if (error && String(error.message || '').includes('personal_records_set_id_fkey')) {
+            const uncompletedPayload = { ...payload, is_completed: false };
+            const step1 = await (supabase.from('sets') as any).upsert(uncompletedPayload, {
+              onConflict: 'id',
+            });
+            if (step1.error) throw step1.error;
+
+            const step2 = await (supabase.from('sets') as any)
+              .update({ is_completed: payload.is_completed, is_pr: payload.is_pr })
+              .eq('id', payload.id);
+            if (step2.error) throw step2.error;
+            error = null;
+          }
+
+          if (error) throw error;
+        } else if (mutation.mutationType === 'update_set') {
+          const raw = mutation.payload as Record<string, any>;
+          const cleanUpdates = sanitizeSetPayload(raw, authUserId);
+          const { id, ...updates } = cleanUpdates;
+          const { error } = await (supabase.from('sets') as any)
+            .update(updates)
+            .eq('id', id);
+          if (error) throw error;
+        } else if (mutation.mutationType === 'delete_set') {
+          const payload = mutation.payload as unknown as { id: string };
+          const { error } = await supabase.from('sets').delete().eq('id', payload.id);
+          if (error) throw error;
+        }
+
+        LocalStore.updateMutationStatus(mutation.id, { status: 'synced' });
+        LocalStore.removeMutation(mutation.id);
+        syncedCount++;
+      } catch (err: unknown) {
+        failedCount++;
+        let errMsg = 'Sync error';
+        if (err && typeof err === 'object') {
+          const supaErr = err as { message?: string; details?: string; hint?: string };
+          errMsg = supaErr.message || String(err);
+        } else if (err instanceof Error) {
+          errMsg = err.message;
+        }
+        errors.push({ id: mutation.id, error: errMsg });
+        LocalStore.updateMutationStatus(mutation.id, {
+          status: 'failed',
+          retryCount: mutation.retryCount + 1,
+          lastError: errMsg,
+        });
+      }
     }
   }
 

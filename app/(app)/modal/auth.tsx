@@ -11,8 +11,6 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
-  SafeAreaView,
   ScrollView,
   ActivityIndicator,
   Alert,
@@ -41,16 +39,16 @@ import {
   ChevronDown,
   ChevronUp,
 } from 'lucide-react-native';
-import { useAuth } from '../../src/context/AuthContext';
-import {
-  isSupabaseConfigured,
-  supabaseUrl,
-  supabaseAnonKey,
-  setCustomSupabaseCredentials,
-} from '../../src/libs/supabase/client';
+import { useAuth } from '@/src/context/AuthContext';
+import { isSupabaseConfigured, setCustomSupabaseCredentials, supabaseAnonKey, supabaseUrl } from '@/src/libs';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { PrimaryCard } from '@/src/components/UIElements';
+import MaskedGlassBG from '@/src/components/masked-glass-bg';
+import { Spacing } from '@/src/constants/theme';
 
 export default function AuthModal() {
   const theme = useTheme();
+  const isnets = useSafeAreaInsets();
   const styles = createStyles(theme);
   const {
     user,
@@ -159,16 +157,17 @@ export default function AuthModal() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={[]}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={{ flex: 1 }}
       >
         {/* Header */}
-        <View style={styles.header}>
+        <View style={[styles.header, { zIndex: 9 }]}>
+          <MaskedGlassBG />
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
             <View style={styles.shieldBadge}>
-              <ShieldCheck size={20} color="#ccff00" />
+              <ShieldCheck size={20} color={theme.accent} />
             </View>
             <View>
               <Text style={styles.title}>
@@ -189,7 +188,7 @@ export default function AuthModal() {
           </TouchableOpacity>
         </View>
 
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView style={{ overflow: "visible" }} contentContainerStyle={[styles.scrollContent, { paddingTop: isnets.top * 1.5 }]} showsVerticalScrollIndicator={false}>
           {/* Connection Banner */}
           <View style={[styles.connectionCard, isSupabaseConfigured ? styles.connOnline : styles.connOffline]}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -205,7 +204,7 @@ export default function AuthModal() {
 
           {/* If Authenticated: Display Active Profile & RLS status */}
           {isAuthenticated && user ? (
-            <View style={styles.authedBox}>
+            <PrimaryCard>
               <View style={styles.authedHeader}>
                 <View style={styles.avatarLarge}>
                   <Text style={styles.avatarLargeText}>
@@ -283,10 +282,10 @@ export default function AuthModal() {
                 <LogOut size={16} color="#ef4444" />
                 <Text style={styles.signOutBtnText}>Sign Out of Supabase</Text>
               </TouchableOpacity>
-            </View>
+            </PrimaryCard>
           ) : (
             /* If Not Authenticated: Sign In / Sign Up Form */
-            <View style={styles.formContainer}>
+            <PrimaryCard>
               {/* Tab Selector */}
               <View style={styles.tabBar}>
                 <TouchableOpacity
@@ -414,19 +413,20 @@ export default function AuthModal() {
                 onPress={handleFillTestAccount}
                 activeOpacity={0.7}
               >
-                <Sparkles size={13} color="#ccff00" />
+                <Sparkles size={13} color={theme.accent} />
                 <Text style={styles.quickFillBtnText}>
                   Autofill Test Athlete Credentials
                 </Text>
               </TouchableOpacity>
-            </View>
+            </PrimaryCard>
           )}
 
           {/* Advanced: Custom Supabase Config Accordion */}
-          <View style={styles.configAccordion}>
+          <PrimaryCard style={{ padding: 0 }}>
             <TouchableOpacity
               style={styles.accordionHeader}
               onPress={() => setShowConfigDetails(!showConfigDetails)}
+              activeOpacity={0.8}
             >
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <KeyRound size={14} color="#a1a1aa" />
@@ -481,7 +481,7 @@ export default function AuthModal() {
                 </TouchableOpacity>
               </View>
             )}
-          </View>
+          </PrimaryCard>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -490,387 +490,367 @@ export default function AuthModal() {
 
 function createStyles(theme: ReturnType<typeof useTheme>) {
   return createThemeStyles(theme, {
-  container: {
-    flex: 1,
-    backgroundColor: '#09090b',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#27272a',
-  },
-  shieldBadge: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
-    backgroundColor: '#ccff0015',
-    borderWidth: 1,
-    borderColor: '#ccff0030',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: {
-    fontSize: 17,
-    fontWeight: '900',
-    color: '#ffffff',
-  },
-  subTitle: {
-    fontSize: 11,
-    color: '#a1a1aa',
-    fontFamily: 'monospace',
-    marginTop: 2,
-  },
-  closeBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: '#18181b',
-    borderWidth: 1,
-    borderColor: '#27272a',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  scrollContent: {
-    padding: 16,
-    paddingBottom: 40,
-  },
-  connectionCard: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 12,
-    borderWidth: 1,
-    marginBottom: 16,
-  },
-  connOnline: {
-    backgroundColor: '#16a34a10',
-    borderColor: '#16a34a30',
-  },
-  connOffline: {
-    backgroundColor: '#eab30810',
-    borderColor: '#eab30830',
-  },
-  connStatusText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#f4f4f5',
-  },
-  connEndpointText: {
-    fontSize: 10,
-    fontFamily: 'monospace',
-    color: '#71717a',
-    maxWidth: 140,
-  },
-  tabBar: {
-    flexDirection: 'row',
-    backgroundColor: '#18181b',
-    borderRadius: 14,
-    padding: 4,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#27272a',
-  },
-  tabBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 10,
-    borderRadius: 10,
-  },
-  tabBtnActive: {
-    backgroundColor: '#ccff00',
-  },
-  tabBtnText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#a1a1aa',
-  },
-  tabBtnTextActive: {
-    color: '#09090b',
-    fontWeight: '900',
-  },
-  formContainer: {
-    backgroundColor: '#09090b',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#27272a',
-    padding: 16,
-    marginBottom: 16,
-  },
-  inputGroup: {
-    marginBottom: 14,
-  },
-  inputLabel: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#71717a',
-    letterSpacing: 0.8,
-    marginBottom: 6,
-  },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#18181b',
-    borderWidth: 1,
-    borderColor: '#27272a',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-  },
-  inputIcon: {
-    marginRight: 8,
-  },
-  input: {
-    flex: 1,
-    height: 48,
-    color: '#ffffff',
-    fontSize: 14,
-  },
-  submitBtn: {
-    height: 50,
-    backgroundColor: '#ccff00',
-    borderRadius: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    marginTop: 6,
-    marginBottom: 12,
-  },
-  submitBtnText: {
-    fontSize: 14,
-    fontWeight: '900',
-    color: '#09090b',
-  },
-  quickFillBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 8,
-  },
-  quickFillBtnText: {
-    fontSize: 12,
-    color: '#ccff00',
-    fontWeight: '700',
-  },
-  errorBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: '#ef444415',
-    borderWidth: 1,
-    borderColor: '#ef444430',
-    padding: 12,
-    borderRadius: 10,
-    marginBottom: 14,
-  },
-  errorText: {
-    flex: 1,
-    fontSize: 12,
-    color: '#f87171',
-  },
-  infoBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: '#16a34a15',
-    borderWidth: 1,
-    borderColor: '#16a34a30',
-    padding: 12,
-    borderRadius: 10,
-    marginBottom: 14,
-  },
-  infoBoxText: {
-    flex: 1,
-    fontSize: 12,
-    color: '#4ade80',
-  },
-  authedBox: {
-    backgroundColor: '#09090b',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#27272a',
-    padding: 16,
-    marginBottom: 16,
-  },
-  authedHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  avatarLarge: {
-    width: 52,
-    height: 52,
-    borderRadius: 16,
-    backgroundColor: '#ccff00',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarLargeText: {
-    fontSize: 18,
-    fontWeight: '900',
-    color: '#09090b',
-  },
-  authedName: {
-    fontSize: 17,
-    fontWeight: '900',
-    color: '#ffffff',
-  },
-  authedEmail: {
-    fontSize: 12,
-    color: '#a1a1aa',
-    marginTop: 1,
-  },
-  rlsPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#16a34a15',
-    alignSelf: 'flex-start',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
-    marginTop: 4,
-  },
-  rlsPillText: {
-    fontSize: 10,
-    color: '#4ade80',
-    fontWeight: '700',
-    fontFamily: 'monospace',
-  },
-  infoCard: {
-    backgroundColor: '#18181b',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#27272a',
-    paddingHorizontal: 12,
-    marginBottom: 14,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#27272a',
-  },
-  infoLabel: {
-    fontSize: 12,
-    color: '#71717a',
-  },
-  infoValue: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#ffffff',
-  },
-  infoValueMono: {
-    fontSize: 11,
-    fontFamily: 'monospace',
-    color: '#ccff00',
-  },
-  copyIdBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  securityBox: {
-    backgroundColor: '#18181b',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#27272a',
-    padding: 12,
-    marginBottom: 16,
-  },
-  securityTitle: {
-    fontSize: 10,
-    color: '#4ade80',
-    fontWeight: '800',
-    letterSpacing: 0.8,
-    marginBottom: 4,
-  },
-  securityItem: {
-    fontSize: 11,
-    fontFamily: 'monospace',
-    color: '#a1a1aa',
-    marginTop: 2,
-  },
-  signOutBtn: {
-    height: 46,
-    borderRadius: 12,
-    backgroundColor: '#ef444415',
-    borderWidth: 1,
-    borderColor: '#ef444430',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  signOutBtnText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#ef4444',
-  },
-  configAccordion: {
-    backgroundColor: '#09090b',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#27272a',
-    overflow: 'hidden',
-  },
-  accordionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 14,
-  },
-  accordionTitle: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#a1a1aa',
-  },
-  accordionBody: {
-    padding: 14,
-    paddingTop: 0,
-    borderTopWidth: 1,
-    borderTopColor: '#18181b',
-  },
-  configNote: {
-    fontSize: 11,
-    color: '#71717a',
-    lineHeight: 16,
-    marginBottom: 12,
-  },
-  configInput: {
-    height: 42,
-    backgroundColor: '#18181b',
-    borderWidth: 1,
-    borderColor: '#27272a',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    color: '#ffffff',
-    fontSize: 12,
-  },
-  saveConfigBtn: {
-    height: 40,
-    backgroundColor: '#27272a',
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 4,
-  },
-  saveConfigBtnText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#ffffff',
-  },
+    container: {
+      flex: 1,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: Spacing.three,
+      paddingVertical: Spacing.four
+    },
+    shieldBadge: {
+      width: 36,
+      height: 36,
+      borderRadius: 12,
+      backgroundColor: '#ccff0015',
+      borderWidth: 1,
+      borderColor: '#ccff0030',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    title: {
+      fontSize: 17,
+      fontWeight: '900',
+      color: '#ffffff',
+    },
+    subTitle: {
+      fontSize: 11,
+      color: '#a1a1aa',
+      fontFamily: 'monospace',
+      marginTop: 2,
+    },
+    closeBtn: {
+      width: 34,
+      height: 34,
+      borderRadius: 17,
+      backgroundColor: '#18181b',
+      borderWidth: 1,
+      borderColor: '#27272a',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    scrollContent: {
+      padding: 16,
+      paddingBottom: 40,
+    },
+    connectionCard: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      borderRadius: 12,
+      borderWidth: 1,
+      marginBottom: 16,
+    },
+    connOnline: {
+      backgroundColor: '#16a34a10',
+      borderColor: '#16a34a30',
+    },
+    connOffline: {
+      backgroundColor: '#eab30810',
+      borderColor: '#eab30830',
+    },
+    connStatusText: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: '#f4f4f5',
+    },
+    connEndpointText: {
+      fontSize: 10,
+      fontFamily: 'monospace',
+      color: '#71717a',
+      maxWidth: 140,
+    },
+    tabBar: {
+      flexDirection: 'row',
+      backgroundColor: '#18181b',
+      borderRadius: 14,
+      padding: 4,
+      marginBottom: 16,
+      borderWidth: 1,
+      borderColor: '#27272a',
+    },
+    tabBtn: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      paddingVertical: 10,
+      borderRadius: 10,
+    },
+    tabBtnActive: {
+      backgroundColor: '#ccff00',
+    },
+    tabBtnText: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: '#a1a1aa',
+    },
+    tabBtnTextActive: {
+      color: '#09090b',
+      fontWeight: '900',
+    },
+    inputGroup: {
+      marginBottom: 14,
+    },
+    inputLabel: {
+      fontSize: 10,
+      fontWeight: '800',
+      color: '#71717a',
+      letterSpacing: 0.8,
+      marginBottom: 6,
+    },
+    inputWrapper: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: '#18181b',
+      borderWidth: 1,
+      borderColor: '#27272a',
+      borderRadius: 12,
+      paddingHorizontal: 12,
+    },
+    inputIcon: {
+      marginRight: 8,
+    },
+    input: {
+      flex: 1,
+      height: 48,
+      color: '#ffffff',
+      fontSize: 14,
+    },
+    submitBtn: {
+      height: 50,
+      backgroundColor: '#ccff00',
+      borderRadius: 14,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      marginTop: 6,
+      marginBottom: 12,
+    },
+    submitBtnText: {
+      fontSize: 14,
+      fontWeight: '900',
+      color: '#09090b',
+    },
+    quickFillBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      paddingVertical: 8,
+    },
+    quickFillBtnText: {
+      fontSize: 12,
+      color: '#ccff00',
+      fontWeight: '700',
+    },
+    errorBox: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      backgroundColor: '#ef444415',
+      borderWidth: 1,
+      borderColor: '#ef444430',
+      padding: 12,
+      borderRadius: 10,
+      marginBottom: 14,
+    },
+    errorText: {
+      flex: 1,
+      fontSize: 12,
+      color: '#f87171',
+    },
+    infoBox: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      backgroundColor: '#16a34a15',
+      borderWidth: 1,
+      borderColor: '#16a34a30',
+      padding: 12,
+      borderRadius: 10,
+      marginBottom: 14,
+    },
+    infoBoxText: {
+      flex: 1,
+      fontSize: 12,
+      color: '#4ade80',
+    },
+    authedHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 16,
+    },
+    avatarLarge: {
+      width: 52,
+      height: 52,
+      borderRadius: 16,
+      backgroundColor: '#ccff00',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    avatarLargeText: {
+      fontSize: 18,
+      fontWeight: '900',
+      color: '#09090b',
+    },
+    authedName: {
+      fontSize: 17,
+      fontWeight: '900',
+      color: '#ffffff',
+    },
+    authedEmail: {
+      fontSize: 12,
+      color: '#a1a1aa',
+      marginTop: 1,
+    },
+    rlsPill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      backgroundColor: '#16a34a15',
+      alignSelf: 'flex-start',
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: 6,
+      marginTop: 4,
+    },
+    rlsPillText: {
+      fontSize: 10,
+      color: '#4ade80',
+      fontWeight: '700',
+      fontFamily: 'monospace',
+    },
+    infoCard: {
+      backgroundColor: '#18181b',
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: '#27272a',
+      paddingHorizontal: 12,
+      marginBottom: 14,
+    },
+    infoRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: 10,
+      borderBottomWidth: 1,
+      borderBottomColor: '#27272a',
+    },
+    infoLabel: {
+      fontSize: 12,
+      color: '#71717a',
+    },
+    infoValue: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: '#ffffff',
+    },
+    infoValueMono: {
+      fontSize: 11,
+      fontFamily: 'monospace',
+      color: '#ccff00',
+    },
+    copyIdBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    securityBox: {
+      backgroundColor: '#18181b',
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: '#27272a',
+      padding: 12,
+      marginBottom: 16,
+    },
+    securityTitle: {
+      fontSize: 10,
+      color: '#4ade80',
+      fontWeight: '800',
+      letterSpacing: 0.8,
+      marginBottom: 4,
+    },
+    securityItem: {
+      fontSize: 11,
+      fontFamily: 'monospace',
+      color: '#a1a1aa',
+      marginTop: 2,
+    },
+    signOutBtn: {
+      height: 46,
+      borderRadius: 12,
+      backgroundColor: '#ef444415',
+      borderWidth: 1,
+      borderColor: '#ef444430',
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+    },
+    signOutBtnText: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: '#ef4444',
+    },
+    configAccordion: {
+      backgroundColor: '#09090b',
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: '#27272a',
+      overflow: 'hidden',
+    },
+    accordionHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: 14,
+    },
+    accordionTitle: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: '#a1a1aa',
+    },
+    accordionBody: {
+      padding: 14,
+      paddingTop: 0,
+      borderTopWidth: 1,
+      borderTopColor: '#18181b',
+    },
+    configNote: {
+      fontSize: 11,
+      color: '#71717a',
+      lineHeight: 16,
+      marginBottom: 12,
+    },
+    configInput: {
+      height: 42,
+      backgroundColor: '#18181b',
+      borderWidth: 1,
+      borderColor: '#27272a',
+      borderRadius: 8,
+      paddingHorizontal: 10,
+      color: '#ffffff',
+      fontSize: 12,
+    },
+    saveConfigBtn: {
+      height: 40,
+      backgroundColor: '#27272a',
+      borderRadius: 10,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: 4,
+    },
+    saveConfigBtnText: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: '#ffffff',
+    },
   });
 }

@@ -4,23 +4,23 @@
  * Production user profile with real metrics, PR vault, hardware sync, and data exports (no simulator test personas)
  */
 import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  ScrollView, 
-  TouchableOpacity, 
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
   Switch,
-  StyleSheet, 
+  StyleSheet,
   Alert
 } from 'react-native';
 import { router, Stack } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { 
-  User, 
-  ShieldCheck, 
-  Activity, 
-  Flame, 
-  Calendar, 
+import {
+  User,
+  ShieldCheck,
+  Activity,
+  Flame,
+  Calendar,
   Database,
   Moon,
   Heart,
@@ -118,12 +118,12 @@ export default function ProfileScreen() {
       'Your full session logs, sets, and personal records can be exported in Strong-compatible CSV or JSON format.',
       [
         { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Export JSON', 
+        {
+          text: 'Export JSON',
           onPress: () => {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             Alert.alert('Export Ready', 'Workout dataset prepared for download.');
-          } 
+          }
         }
       ]
     );
@@ -153,8 +153,8 @@ export default function ProfileScreen() {
           </View>
         ),
       }} />
-      <ScrollView contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top }]} showsVerticalScrollIndicator={false}>
-        
+      <ScrollView contentContainerStyle={[styles.scrollContent, { gap: Spacing.two, paddingTop: insets.top }]} showsVerticalScrollIndicator={false}>
+
         {/* User Identity Card */}
         <View style={styles.profileHeader}>
           <View style={[styles.avatar, !isAuthenticated && { backgroundColor: '#3f3f46' }]}>
@@ -182,7 +182,7 @@ export default function ProfileScreen() {
         <View style={styles.authCard}>
           <View style={styles.authCardHeader}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <ShieldCheck size={18} color="#ccff00" />
+              <ShieldCheck size={18} color={theme.accent} />
               <Text style={styles.authCardTitle}>Supabase Cloud Authentication</Text>
             </View>
             <View style={[styles.authStatusBadge, isAuthenticated ? styles.statusOnline : styles.statusOffline]}>
@@ -226,7 +226,7 @@ export default function ProfileScreen() {
                     router.push('/modal/auth');
                   }}
                 >
-                  <KeyRound size={14} color="#ccff00" />
+                  <KeyRound size={14} color={theme.accent} />
                   <Text style={styles.manageAuthBtnText}>Manage Cloud Account</Text>
                 </TouchableOpacity>
 
@@ -314,7 +314,7 @@ export default function ProfileScreen() {
         <View style={styles.syncCard}>
           <View style={styles.syncTop}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <Wifi size={16} color="#ccff00" />
+              <Wifi size={16} color={theme.accent} />
               <Text style={styles.syncTitle}>Local SQLite Primary Cache</Text>
             </View>
             <View style={[styles.onlineBadge, !isSupabaseConfigured && { backgroundColor: '#eab30820' }]}>
@@ -324,7 +324,7 @@ export default function ProfileScreen() {
             </View>
           </View>
           <Text style={styles.syncDesc}>{syncStatus}</Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.syncBtn, isSyncing && { opacity: 0.6 }]}
             onPress={handleManualSync}
             disabled={isSyncing}
@@ -339,7 +339,7 @@ export default function ProfileScreen() {
         {/* Section: Training Preferences & Hardware */}
         <Text style={styles.sectionHeader}>SETTINGS & HARDWARE</Text>
         <View style={styles.settingsCard}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.settingRow}
             onPress={() => {
               Haptics.selectionAsync();
@@ -369,8 +369,6 @@ export default function ProfileScreen() {
                 Haptics.selectionAsync();
                 setUseKg(val);
               }}
-              trackColor={{ false: '#27272a', true: '#ccff00' }}
-              thumbColor={useKg ? '#09090b' : '#71717a'}
             />
           </View>
 
@@ -385,8 +383,6 @@ export default function ProfileScreen() {
                 Haptics.selectionAsync();
                 setCycleAware(val);
               }}
-              trackColor={{ false: '#27272a', true: '#f472b6' }}
-              thumbColor={cycleAware ? '#09090b' : '#71717a'}
             />
           </View>
 
@@ -401,8 +397,6 @@ export default function ProfileScreen() {
                 Haptics.selectionAsync();
                 setHealthSync(val);
               }}
-              trackColor={{ false: '#27272a', true: '#ccff00' }}
-              thumbColor={healthSync ? '#09090b' : '#71717a'}
             />
           </View>
         </View>
@@ -410,7 +404,7 @@ export default function ProfileScreen() {
         {/* Onboarding & AI Desk */}
         <Text style={styles.sectionHeader}>COACHING & PERIODIZATION</Text>
         <View style={styles.launchCard}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.launchRow}
             onPress={() => {
               Haptics.selectionAsync();
@@ -424,7 +418,7 @@ export default function ProfileScreen() {
             <ChevronRight size={18} color="#71717a" />
           </TouchableOpacity>
 
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.launchRow, { borderTopWidth: 1, borderTopColor: '#27272a' }]}
             onPress={() => {
               Haptics.selectionAsync();
@@ -442,7 +436,7 @@ export default function ProfileScreen() {
         {/* Data Management */}
         <Text style={styles.sectionHeader}>DATA & BACKUP</Text>
         <View style={styles.launchCard}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.launchRow}
             onPress={handleExportData}
           >
@@ -461,422 +455,439 @@ export default function ProfileScreen() {
 
 function createStyles(theme: ReturnType<typeof useTheme>) {
   return createThemeStyles(theme, {
-  container: {
-    flex: 1,
-    backgroundColor: '#09090b',
-  },
-  scrollContent: {
-    paddingTop: 16,
-    paddingHorizontal: Spacing.two,
-    paddingBottom: 40,
-  },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingBottom: 10,
-  },
-  topBarLabel: {
-    fontSize: 10,
-    color: '#ccff00',
-    fontWeight: '900',
-    letterSpacing: 1,
-  },
-  topBarTitle: {
-    fontSize: 20,
-    color: '#ffffff',
-    fontWeight: '900',
-    marginTop: 2,
-  },
-  profileHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#18181b',
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#27272a',
-    padding: 16,
-    marginBottom: 14,
-  },
-  avatar: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
-    backgroundColor: '#ccff00',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarText: {
-    fontSize: 20,
-    color: '#09090b',
-    fontWeight: '900',
-  },
-  userName: {
-    fontSize: 18,
-    color: '#ffffff',
-    fontWeight: '900',
-  },
-  proBadge: {
-    backgroundColor: '#ccff0020',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  proBadgeText: {
-    color: '#ccff00',
-    fontSize: 9,
-    fontWeight: '900',
-  },
-  guestBadge: {
-    backgroundColor: '#3f3f46',
-  },
-  guestBadgeText: {
-    color: '#a1a1aa',
-  },
-  userTier: {
-    fontSize: 12,
-    color: '#a1a1aa',
-    marginTop: 2,
-  },
-  userSplit: {
-    fontSize: 11,
-    color: '#71717a',
-    marginTop: 2,
-  },
-  authCard: {
-    backgroundColor: '#18181b',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#27272a',
-    padding: 14,
-    marginBottom: 14,
-  },
-  authCardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  authCardTitle: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#ffffff',
-  },
-  authStatusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
-  },
-  statusOnline: {
-    backgroundColor: '#16a34a20',
-  },
-  statusOffline: {
-    backgroundColor: '#eab30820',
-  },
-  authStatusText: {
-    fontSize: 10,
-    fontWeight: '800',
-    fontFamily: 'monospace',
-  },
-  statusTextOnline: {
-    color: '#4ade80',
-  },
-  statusTextOffline: {
-    color: '#facc15',
-  },
-  authedContent: {
-    gap: 8,
-  },
-  authDetailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 4,
-  },
-  authDetailLabel: {
-    fontSize: 12,
-    color: '#71717a',
-  },
-  authDetailValue: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#ffffff',
-  },
-  authDetailMono: {
-    fontSize: 11,
-    fontFamily: 'monospace',
-    color: '#ccff00',
-  },
-  copyUidRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  authActionsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 8,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#27272a',
-  },
-  manageAuthBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    backgroundColor: '#27272a',
-    paddingVertical: 10,
-    borderRadius: 10,
-  },
-  manageAuthBtnText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#ffffff',
-  },
-  signOutSmallBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#ef444415',
-    borderWidth: 1,
-    borderColor: '#ef444430',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-  },
-  signOutSmallBtnText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#ef4444',
-  },
-  guestContent: {
-    gap: 10,
-  },
-  guestNote: {
-    fontSize: 12,
-    color: '#a1a1aa',
-    lineHeight: 17,
-  },
-  signInPrimaryBtn: {
-    height: 44,
-    backgroundColor: '#ccff00',
-    borderRadius: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  signInPrimaryBtnText: {
-    fontSize: 13,
-    fontWeight: '900',
-    color: '#09090b',
-  },
-  metricsBanner: {
-    flexDirection: 'row',
-    backgroundColor: '#18181b',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#27272a',
-    padding: 14,
-    marginBottom: 14,
-  },
-  metricCol: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  metricColBorder: {
-    borderLeftWidth: 1,
-    borderRightWidth: 1,
-    borderColor: '#27272a',
-  },
-  metricLabel: {
-    fontSize: 9,
-    color: '#71717a',
-    fontWeight: '800',
-    letterSpacing: 0.5,
-  },
-  metricValue: {
-    fontSize: 18,
-    fontWeight: '900',
-    color: '#ffffff',
-    marginVertical: 2,
-  },
-  metricDelta: {
-    fontSize: 10,
-    color: '#a1a1aa',
-  },
-  streakBox: {
-    backgroundColor: '#18181b',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#27272a',
-    padding: 14,
-    marginBottom: 14,
-  },
-  streakTitle: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#ffffff',
-  },
-  streakDesc: {
-    fontSize: 12,
-    color: '#a1a1aa',
-    lineHeight: 17,
-    marginTop: 4,
-  },
-  sectionHeader: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#71717a',
-    letterSpacing: 0.8,
-    marginTop: 8,
-    marginBottom: 10,
-    marginLeft: 4,
-  },
-  prsGrid: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 14,
-  },
-  prBox: {
-    flex: 1,
-    backgroundColor: '#18181b',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#27272a',
-    padding: 12,
-    alignItems: 'center',
-  },
-  prLiftName: {
-    fontSize: 9,
-    fontWeight: '800',
-    color: '#71717a',
-    letterSpacing: 0.5,
-  },
-  prWeight: {
-    fontSize: 16,
-    fontWeight: '900',
-    color: '#ccff00',
-    marginVertical: 4,
-  },
-  prSub: {
-    fontSize: 9,
-    color: '#a1a1aa',
-    fontFamily: 'monospace',
-  },
-  syncCard: {
-    backgroundColor: '#18181b',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#27272a',
-    padding: 14,
-    marginBottom: 14,
-  },
-  syncTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  syncTitle: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#ffffff',
-  },
-  onlineBadge: {
-    backgroundColor: '#16a34a20',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  onlineBadgeText: {
-    color: '#4ade80',
-    fontSize: 9,
-    fontWeight: '800',
-    fontFamily: 'monospace',
-  },
-  syncDesc: {
-    fontSize: 11,
-    color: '#a1a1aa',
-    marginBottom: 12,
-  },
-  syncBtn: {
-    height: 40,
-    borderRadius: 10,
-    backgroundColor: '#ccff00',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  syncBtnText: {
-    fontSize: 12,
-    fontWeight: '900',
-    color: '#09090b',
-  },
-  settingsCard: {
-    backgroundColor: '#18181b',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#27272a',
-    paddingHorizontal: 14,
-    marginBottom: 14,
-  },
-  settingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#27272a',
-  },
-  settingLabel: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#ffffff',
-  },
-  settingSub: {
-    fontSize: 11,
-    color: '#71717a',
-    marginTop: 2,
-  },
-  statusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  dotGreen: {
-    backgroundColor: '#4ade80',
-  },
-  dotAmber: {
-    backgroundColor: '#facc15',
-  },
-  launchCard: {
-    backgroundColor: '#18181b',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#27272a',
-    marginBottom: 14,
-  },
-  launchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 14,
-  },
-  launchTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#ffffff',
-  },
-  launchSub: {
-    fontSize: 11,
-    color: '#71717a',
-    marginTop: 2,
-  },
+    container: {
+      flex: 1,
+      backgroundColor: theme.background,
+    },
+    scrollContent: {
+      paddingTop: 16,
+      paddingHorizontal: Spacing.two,
+      paddingBottom: 40,
+    },
+    topBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      paddingBottom: 10,
+    },
+    topBarLabel: {
+      fontSize: 10,
+      color: theme.accent,
+      fontWeight: '900',
+      letterSpacing: 1,
+    },
+    topBarTitle: {
+      fontSize: 20,
+      color: theme.text,
+      fontWeight: '900',
+      marginTop: 2,
+    },
+
+    // ── Profile Header ──────────────────────────────
+    profileHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.bgElevated,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: theme.borderSubtle,
+      padding: 16,
+      marginBottom: 14,
+    },
+    avatar: {
+      width: 54,
+      height: 54,
+      borderRadius: 27,
+      backgroundColor: theme.accent,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    avatarText: {
+      fontSize: 20,
+      color: theme.background,
+      fontWeight: '900',
+    },
+    userName: {
+      fontSize: 18,
+      color: theme.text,
+      fontWeight: '900',
+    },
+    proBadge: {
+      backgroundColor: theme.accent + '20',
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: 4,
+    },
+    proBadgeText: {
+      color: theme.accent,
+      fontSize: 9,
+      fontWeight: '900',
+    },
+    guestBadge: {
+      backgroundColor: theme.backgroundElement,
+    },
+    guestBadgeText: {
+      color: theme.textSecondary,
+    },
+    userTier: {
+      fontSize: 12,
+      color: theme.textSecondary,
+      marginTop: 2,
+    },
+    userSplit: {
+      fontSize: 11,
+      color: theme.textMuted,
+      marginTop: 2,
+    },
+
+    // ── Auth Card ───────────────────────────────────
+    authCard: {
+      backgroundColor: theme.bgElevated,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: theme.borderSubtle,
+      padding: 14,
+      marginBottom: 14,
+    },
+    authCardHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 10,
+    },
+    authCardTitle: {
+      fontSize: 13,
+      fontWeight: '800',
+      color: theme.text,
+    },
+    authStatusBadge: {
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: 6,
+    },
+    statusOnline: {
+      backgroundColor: theme.success + '20',
+    },
+    statusOffline: {
+      backgroundColor: '#eab30820', // amber – keep if you don’t have theme.warning
+    },
+    authStatusText: {
+      fontSize: 10,
+      fontWeight: '800',
+      fontFamily: 'monospace',
+    },
+    statusTextOnline: {
+      color: theme.success,
+    },
+    statusTextOffline: {
+      color: '#facc15',
+    },
+    authedContent: {
+      gap: 8,
+    },
+    authDetailRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: 4,
+    },
+    authDetailLabel: {
+      fontSize: 12,
+      color: theme.textMuted,
+    },
+    authDetailValue: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: theme.text,
+    },
+    authDetailMono: {
+      fontSize: 11,
+      fontFamily: 'monospace',
+      color: theme.accent,
+    },
+    copyUidRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    authActionsRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      marginTop: 8,
+      paddingTop: 8,
+      borderTopWidth: 1,
+      borderTopColor: theme.border,
+    },
+    manageAuthBtn: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      backgroundColor: theme.backgroundElement,
+      paddingVertical: 10,
+      borderRadius: 10,
+    },
+    manageAuthBtnText: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: theme.text,
+    },
+    signOutSmallBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      backgroundColor: '#ef444415',
+      borderWidth: 1,
+      borderColor: '#ef444430',
+      paddingVertical: 10,
+      paddingHorizontal: 12,
+      borderRadius: 10,
+    },
+    signOutSmallBtnText: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: '#ef4444',
+    },
+    guestContent: {
+      gap: 10,
+    },
+    guestNote: {
+      fontSize: 12,
+      color: theme.textSecondary,
+      lineHeight: 17,
+    },
+    signInPrimaryBtn: {
+      height: 44,
+      backgroundColor: theme.accent,
+      borderRadius: 12,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+    },
+    signInPrimaryBtnText: {
+      fontSize: 13,
+      fontWeight: '900',
+      color: theme.background,
+    },
+
+    // ── Metrics Banner ──────────────────────────────
+    metricsBanner: {
+      flexDirection: 'row',
+      backgroundColor: theme.bgElevated,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: theme.borderSubtle,
+      padding: 14,
+      marginBottom: 14,
+    },
+    metricCol: {
+      flex: 1,
+      alignItems: 'center',
+    },
+    metricColBorder: {
+      borderLeftWidth: 1,
+      borderRightWidth: 1,
+      borderColor: theme.borderSubtle,
+    },
+    metricLabel: {
+      fontSize: 9,
+      color: theme.textMuted,
+      fontWeight: '800',
+      letterSpacing: 0.5,
+    },
+    metricValue: {
+      fontSize: 18,
+      fontWeight: '900',
+      color: theme.text,
+      marginVertical: 2,
+    },
+    metricDelta: {
+      fontSize: 10,
+      color: theme.textSecondary,
+    },
+
+    // ── Streak ──────────────────────────────────────
+    streakBox: {
+      backgroundColor: theme.bgElevated,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: theme.borderSubtle,
+      padding: 14,
+      marginBottom: 14,
+    },
+    streakTitle: {
+      fontSize: 14,
+      fontWeight: '800',
+      color: theme.text,
+    },
+    streakDesc: {
+      fontSize: 12,
+      color: theme.textSecondary,
+      lineHeight: 17,
+      marginTop: 4,
+    },
+
+    // ── Section Header ──────────────────────────────
+    sectionHeader: {
+      fontSize: 11,
+      fontWeight: '800',
+      color: theme.textMuted,
+      letterSpacing: 0.8,
+      marginTop: 8,
+      marginBottom: 10,
+      marginLeft: 4,
+    },
+
+    // ── PRs Grid ────────────────────────────────────
+    prsGrid: {
+      flexDirection: 'row',
+      gap: 10,
+      marginBottom: 14,
+    },
+    prBox: {
+      flex: 1,
+      backgroundColor: theme.bgElevated,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: theme.borderSubtle,
+      padding: 12,
+      alignItems: 'center',
+    },
+    prLiftName: {
+      fontSize: 9,
+      fontWeight: '800',
+      color: theme.textMuted,
+      letterSpacing: 0.5,
+    },
+    prWeight: {
+      fontSize: 16,
+      fontWeight: '900',
+      color: theme.accent,
+      marginVertical: 4,
+    },
+    prSub: {
+      fontSize: 9,
+      color: theme.textSecondary,
+      fontFamily: 'monospace',
+    },
+
+    // ── Sync Card ───────────────────────────────────
+    syncCard: {
+      backgroundColor: theme.bgElevated,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: theme.borderSubtle,
+      padding: 14,
+      marginBottom: 14,
+    },
+    syncTop: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 6,
+    },
+    syncTitle: {
+      fontSize: 13,
+      fontWeight: '800',
+      color: theme.text,
+    },
+    onlineBadge: {
+      backgroundColor: theme.success + '20',
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: 4,
+    },
+    onlineBadgeText: {
+      color: theme.success,
+      fontSize: 9,
+      fontWeight: '800',
+      fontFamily: 'monospace',
+    },
+    syncDesc: {
+      fontSize: 11,
+      color: theme.textSecondary,
+      marginBottom: 12,
+    },
+    syncBtn: {
+      height: 40,
+      borderRadius: 10,
+      backgroundColor: theme.accent,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+    },
+    syncBtnText: {
+      fontSize: 12,
+      fontWeight: '900',
+      color: theme.background,
+    },
+
+    // ── Settings Card ───────────────────────────────
+    settingsCard: {
+      backgroundColor: theme.bgElevated,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: theme.borderSubtle,
+      paddingHorizontal: 14,
+      marginBottom: 14,
+    },
+    settingRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: 14,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.border,
+    },
+    settingLabel: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: theme.text,
+    },
+    settingSub: {
+      fontSize: 11,
+      color: theme.textMuted,
+      marginTop: 2,
+    },
+    statusDot: {
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+    },
+    dotGreen: {
+      backgroundColor: theme.success,
+    },
+    dotAmber: {
+      backgroundColor: '#facc15',
+    },
+
+    // ── Launch Card ─────────────────────────────────
+    launchCard: {
+      backgroundColor: theme.bgElevated,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: theme.borderSubtle,
+      marginBottom: 14,
+    },
+    launchRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: 14,
+    },
+    launchTitle: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: theme.text,
+    },
+    launchSub: {
+      fontSize: 11,
+      color: theme.textMuted,
+      marginTop: 2,
+    },
   });
 }
-

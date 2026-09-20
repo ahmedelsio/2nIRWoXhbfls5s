@@ -213,6 +213,7 @@ export default function LibraryScreen() {
                     Haptics.selectionAsync();
                     setSelectedMuscle(m);
                   }}
+                  activeOpacity={0.8}
                 >
                   <Text style={[styles.filterText, active && styles.filterTextActive]}>{m}</Text>
                 </TouchableOpacity>
@@ -221,7 +222,7 @@ export default function LibraryScreen() {
           </ScrollView>
         </View>
 
-        <View style={{ paddingHorizontal: Spacing.two, gap: 12 }}>
+        <View style={{ paddingHorizontal: Spacing.two, gap: Spacing.two }}>
           {filtered.map((item) => {
             const isExpanded = expandedId === item.id;
             return (
@@ -291,7 +292,7 @@ export default function LibraryScreen() {
                         router.push('/modal/cues');
                       }}
                     >
-                      <HelpCircle size={16} color="#ccff00" />
+                      <HelpCircle size={16} color={theme.accent} />
                       <Text style={styles.openCuesBtnText}>Launch Biomechanics Desk</Text>
                     </TouchableOpacity>
                   </View>
@@ -309,11 +310,12 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
   return createThemeStyles(theme, {
     container: {
       flex: 1,
-      backgroundColor: '#09090b',
+      backgroundColor: theme.background,
     },
     header: {
       paddingTop: 10,
       paddingBottom: 10,
+      gap: Spacing.two
     },
     headerContent: {
       paddingHorizontal: Spacing.two,
@@ -326,24 +328,24 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
     },
     topBarLabel: {
       fontSize: 10,
-      color: '#ccff00',
+      color: theme.accent,
       fontWeight: '900',
       letterSpacing: 1,
     },
     topBarTitle: {
       fontSize: 20,
-      color: '#ffffff',
+      color: theme.text,
       fontWeight: '900',
       marginTop: 2,
     },
     title: {
       fontSize: 28,
-      color: '#ffffff',
+      color: theme.text,
       fontWeight: '900',
     },
     subTitle: {
       fontSize: 12,
-      color: '#a1a1aa',
+      color: theme.textSecondary,
       marginTop: 2,
       marginBottom: 14,
     },
@@ -351,9 +353,9 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 10,
-      backgroundColor: '#18181b',
+      backgroundColor: theme.bgElevated,
       borderWidth: 1,
-      borderColor: '#27272a',
+      borderColor: theme.borderSubtle,
       borderRadius: 14,
       paddingHorizontal: 14,
       paddingVertical: 10,
@@ -361,33 +363,32 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
     },
     searchInput: {
       flex: 1,
-      color: '#ffffff',
+      color: theme.text,
       fontSize: 14,
     },
     filterScroll: {
       gap: 8,
-      // paddingHorizontal: 16,
       paddingBottom: 4,
     },
     filterPill: {
       paddingHorizontal: 14,
       paddingVertical: 6,
       borderRadius: 20,
-      backgroundColor: '#18181b',
+      backgroundColor: theme.bgElevated,
       borderWidth: 1,
-      borderColor: '#27272a',
+      borderColor: theme.borderSubtle,
     },
     filterPillActive: {
-      backgroundColor: '#ccff00',
-      borderColor: '#ccff00',
+      backgroundColor: theme.accent,
+      borderColor: theme.accent,
     },
     filterText: {
-      color: '#a1a1aa',
+      color: theme.textSecondary,
       fontSize: 12,
       fontWeight: '700',
     },
     filterTextActive: {
-      color: '#09090b',
+      color: theme.background,
       fontWeight: '900',
     },
     listContent: {
@@ -396,15 +397,15 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
       gap: 10,
     },
     card: {
-      backgroundColor: '#18181b',
+      backgroundColor: theme.bgElevated,
       borderRadius: 16,
       borderWidth: 1,
-      borderColor: '#27272a',
+      borderColor: theme.borderSubtle,   // ← as requested
       padding: 14,
     },
     cardExpanded: {
-      borderColor: '#ccff00',
-      backgroundColor: '#1a1d13',
+      borderColor: theme.accent,
+      backgroundColor: theme.accent + '11', // soft accent tint
     },
     cardHeader: {
       flexDirection: 'row',
@@ -413,7 +414,7 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
     },
     exName: {
       fontSize: 16,
-      color: '#ffffff',
+      color: theme.text,
       fontWeight: '800',
       marginBottom: 6,
     },
@@ -422,18 +423,18 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
       gap: 6,
     },
     tagPill: {
-      backgroundColor: '#ccff0020',
+      backgroundColor: theme.accent + '20',
       paddingHorizontal: 8,
       paddingVertical: 2,
       borderRadius: 6,
     },
     tagText: {
       fontSize: 10,
-      color: '#ccff00',
+      color: theme.accent,
       fontWeight: '800',
     },
     briefCue: {
-      color: '#a1a1aa',
+      color: theme.textSecondary,
       fontSize: 12,
       marginTop: 8,
       lineHeight: 16,
@@ -442,23 +443,23 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
       marginTop: 14,
       paddingTop: 12,
       borderTopWidth: 1,
-      borderTopColor: '#27272a',
+      borderTopColor: theme.border,
       gap: 10,
     },
     detailBlock: {
-      backgroundColor: '#09090b',
+      backgroundColor: theme.background,
       padding: 10,
       borderRadius: 10,
     },
     detailHeading: {
       fontSize: 10,
-      color: '#ccff00',
+      color: theme.accent,
       fontWeight: '900',
       letterSpacing: 0.5,
       marginBottom: 4,
     },
     detailBody: {
-      color: '#d4d4d8',
+      color: theme.textSecondary,
       fontSize: 12,
       lineHeight: 17,
     },
@@ -475,15 +476,15 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
       alignItems: 'center',
       justifyContent: 'center',
       gap: 6,
-      backgroundColor: '#18181b',
+      backgroundColor: theme.bgElevated,
       borderWidth: 1,
-      borderColor: '#ccff00',
+      borderColor: theme.accent,
       paddingVertical: 10,
       borderRadius: 10,
       marginTop: 6,
     },
     openCuesBtnText: {
-      color: '#ccff00',
+      color: theme.accent,
       fontSize: 12,
       fontWeight: '800',
     },

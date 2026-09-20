@@ -51,8 +51,7 @@ function RootNavigator() {
       <Stack
         screenOptions={{
           headerShown: false,
-          animation: 'slide_from_right',
-          contentStyle: { backgroundColor: theme.background },
+          animation: 'fade',
         }}
       >
         <Stack.Protected guard={isAuthenticated}>
@@ -61,11 +60,6 @@ function RootNavigator() {
         <Stack.Protected guard={!isAuthenticated}>
           <Stack.Screen name="(auth)" />
         </Stack.Protected>
-        <Stack.Screen name="modal/plates" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
-        <Stack.Screen name="modal/cues" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
-        <Stack.Screen name="modal/swap-exercise" options={{ presentation: 'formSheet' }} />
-        <Stack.Screen name="modal/onboarding" options={{ presentation: 'fullScreenModal' }} />
-        <Stack.Screen name="modal/ai-coach" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
       </Stack>
     </>
   );

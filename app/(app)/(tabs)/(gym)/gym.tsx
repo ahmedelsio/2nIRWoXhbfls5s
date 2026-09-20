@@ -439,7 +439,7 @@ export default function GymModeScreen() {
             </View>
           ),
         }} />
-        <View style={{ flex: 1, justifyContent: 'center', padding: 24, backgroundColor: '#09090b' }}>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, backgroundColor: '#09090b' }}>
           {finished ? (
             <>
               <Text style={{ color: '#fff', fontSize: 20, fontWeight: '800', marginBottom: 8 }}>
@@ -462,7 +462,13 @@ export default function GymModeScreen() {
           )}
           <TouchableOpacity
             onPress={() => router.push('/(app)/(tabs)/(today)' as Href)}
-            style={{ backgroundColor: '#ccff00', padding: 16, borderRadius: 14 }}
+            style={{
+              backgroundColor: theme.accent,
+              paddingHorizontal: 20,
+              paddingVertical: Spacing.three,
+              borderRadius: 12,
+            }}
+            activeOpacity={0.8}
           >
             <Text style={{ color: '#09090b', fontWeight: '800', textAlign: 'center' }}>
               {finished ? 'Start another from Today' : 'Go to Today'}
@@ -499,7 +505,7 @@ export default function GymModeScreen() {
         )
       }} />
       <ScrollView
-        contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top }]}
+        contentContainerStyle={[styles.scrollContent, { gap: Spacing.two, paddingTop: insets.top }]}
         showsVerticalScrollIndicator={false}
       >
         {/* HORIZONTAL EXERCISE CAROUSEL CHIPS */}
@@ -638,7 +644,7 @@ export default function GymModeScreen() {
               <View style={[styles.comparisonCard, styles.targetCard]}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                   <Text style={[styles.comparisonLabel, { color: '#ccff00' }]}>TODAY'S TARGET</Text>
-                  <Sparkles size={12} color="#ccff00" />
+                  <Sparkles size={12} color={theme.accent} />
                 </View>
                 <Text style={[styles.comparisonValue, { color: '#ccff00' }]} numberOfLines={1}>
                   {currentExercise.targetPerformance}
@@ -850,7 +856,7 @@ export default function GymModeScreen() {
                   setShowPlateModal(true);
                 }}
               >
-                <Calculator size={14} color="#ccff00" />
+                <Calculator size={14} color={theme.accent} />
                 <Text style={styles.plateTriggerText}>Plates</Text>
               </TouchableOpacity>
             </View>
@@ -1009,7 +1015,7 @@ export default function GymModeScreen() {
                       <Text style={[styles.rirValText, active && styles.rirValTextActive]}>
                         {r.label}
                       </Text>
-                      {active && <Check size={14} color="#ccff00" strokeWidth={3} />}
+                      {active && <Check size={14} color={theme.accent} strokeWidth={3} />}
                     </View>
                     <Text style={[styles.rirDescText, active && styles.rirDescTextActive]}>
                       {r.desc}
@@ -1043,7 +1049,7 @@ export default function GymModeScreen() {
                 setShowPlateModal(true);
               }}
             >
-              <Calculator size={18} color="#ccff00" />
+              <Calculator size={18} color={theme.accent} />
               <Text style={styles.toolBtnText}>Plates</Text>
             </TouchableOpacity>
 
@@ -1376,13 +1382,13 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
     },
     subtext: {
       fontSize: 10,
-      color: '#ccff00',
+      color: theme.accent,
       fontWeight: '900',
       letterSpacing: 1,
     },
     workoutTitle: {
       fontSize: 20,
-      color: '#ffffff',
+      color: theme.text,
       fontWeight: '900',
       marginTop: 2,
     },
@@ -1390,82 +1396,86 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 6,
-      backgroundColor: '#ccff00',
+      backgroundColor: theme.accent,
       paddingHorizontal: 14,
       paddingVertical: 8,
       borderRadius: 10,
     },
     finishBtnText: {
-      color: '#09090b',
+      color: theme.background,
       fontSize: 12,
       fontWeight: '900',
     },
+
+    // ── Exercise Navigation ─────────────────────────
     exerciseNavContainer: {
       paddingVertical: 8,
-      marginBottom: 12
+      marginBottom: 12,
     },
     navChip: {
-      backgroundColor: '#18181b',
+      backgroundColor: theme.bgElevated,
       borderWidth: 1,
-      borderColor: '#27272a',
+      borderColor: theme.borderSubtle,
       paddingHorizontal: 12,
       paddingVertical: 7,
       borderRadius: 20,
     },
     navChipActive: {
-      borderColor: '#ccff00',
-      backgroundColor: '#ccff0018',
+      borderColor: theme.accent,
+      backgroundColor: theme.accent + '18',
     },
     navChipDone: {
-      borderColor: '#22c55e40',
-      backgroundColor: '#22c55e10',
+      borderColor: theme.success + '40',
+      backgroundColor: theme.success + '10',
     },
     chipIdxText: {
-      color: '#71717a',
+      color: theme.textMuted,
       fontSize: 11,
       fontWeight: '900',
       fontFamily: 'monospace',
     },
     chipIdxTextActive: {
-      color: '#ccff00',
+      color: theme.accent,
     },
     navChipText: {
-      color: '#a1a1aa',
+      color: theme.textSecondary,
       fontSize: 12,
       fontWeight: '700',
     },
     navChipTextActive: {
-      color: '#ccff00',
+      color: theme.accent,
       fontWeight: '800',
     },
     chipCounter: {
-      color: '#71717a',
+      color: theme.textMuted,
       fontSize: 10,
       fontWeight: '600',
     },
+
     scrollContent: {
-      // paddingHorizontal: 16,
       paddingBottom: 16,
     },
+
+    // ── Rest Timer ──────────────────────────────────
     restTimerCard: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      backgroundColor: '#1c1f13',
+      backgroundColor: theme.accent + '11',
       borderWidth: 1,
-      borderColor: '#ccff00',
+      borderColor: theme.accent,
       borderRadius: 16,
       padding: 12,
       marginTop: 12,
     },
     restTitle: {
-      color: '#ccff00',
+      color: theme.accent,
       fontSize: 10,
       fontWeight: '900',
       letterSpacing: 1,
     },
     restDigits: {
-      color: '#ffffff',
+      color: theme.text,
       fontSize: 24,
       fontWeight: '900',
       fontFamily: 'monospace',
@@ -1475,23 +1485,25 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
       gap: 6,
     },
     restActionBtn: {
-      backgroundColor: '#09090b',
+      backgroundColor: theme.background,
       borderWidth: 1,
-      borderColor: '#27272a',
+      borderColor: theme.border,
       paddingHorizontal: 10,
       paddingVertical: 6,
       borderRadius: 8,
     },
     restActionText: {
-      color: '#d4d4d8',
+      color: theme.textSecondary,
       fontSize: 11,
       fontWeight: '700',
     },
+
+    // ── Exercise Card ───────────────────────────────
     exerciseCard: {
-      backgroundColor: '#18181b',
+      backgroundColor: theme.bgElevated,
       borderRadius: 18,
       borderWidth: 1,
-      borderColor: '#27272a',
+      borderColor: theme.borderSubtle, // ← main cards
       padding: 14,
       marginBottom: 14,
     },
@@ -1501,26 +1513,26 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
       justifyContent: 'space-between',
     },
     exerciseBadge: {
-      backgroundColor: '#27272a',
+      backgroundColor: theme.backgroundElement,
       paddingHorizontal: 6,
       paddingVertical: 2,
       borderRadius: 6,
     },
     exerciseBadgeText: {
-      color: '#ccff00',
+      color: theme.accent,
       fontSize: 10,
       fontWeight: '800',
       fontFamily: 'monospace',
     },
     muscleText: {
-      color: '#71717a',
+      color: theme.textMuted,
       fontSize: 11,
       fontWeight: '700',
       textTransform: 'uppercase',
       letterSpacing: 0.5,
     },
     exerciseTitle: {
-      color: '#ffffff',
+      color: theme.text,
       fontSize: 20,
       fontWeight: '900',
       letterSpacing: -0.3,
@@ -1530,22 +1542,24 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 4,
-      backgroundColor: '#27272a',
+      backgroundColor: theme.backgroundElement,
       borderWidth: 1,
-      borderColor: '#3f3f46',
+      borderColor: theme.border,
       paddingHorizontal: 10,
       paddingVertical: 6,
       borderRadius: 10,
     },
     cuesTriggerBtnActive: {
-      borderColor: '#ccff00',
-      backgroundColor: '#ccff0015',
+      borderColor: theme.accent,
+      backgroundColor: theme.accent + '15',
     },
     cuesTriggerText: {
-      color: '#38bdf8',
+      color: '#38bdf8', // keep sky blue for cues
       fontSize: 11,
       fontWeight: '700',
     },
+
+    // ── Comparison Grid ─────────────────────────────
     comparisonGrid: {
       flexDirection: 'row',
       gap: 8,
@@ -1553,50 +1567,52 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
     },
     comparisonCard: {
       flex: 1,
-      backgroundColor: '#09090b',
+      backgroundColor: theme.background,
       borderRadius: 12,
       borderWidth: 1,
-      borderColor: '#27272a',
+      borderColor: theme.borderSubtle,
       padding: 10,
     },
     targetCard: {
-      borderColor: '#ccff0040',
-      backgroundColor: '#ccff0008',
+      borderColor: theme.accent + '40',
+      backgroundColor: theme.accent + '08',
     },
     comparisonLabel: {
-      color: '#71717a',
+      color: theme.textMuted,
       fontSize: 9,
       fontWeight: '800',
       letterSpacing: 0.8,
       marginBottom: 3,
     },
     comparisonValue: {
-      color: '#e4e4e7',
+      color: theme.text,
       fontSize: 12,
       fontWeight: '800',
       fontFamily: 'monospace',
     },
+
+    // ── Cues Drawer ─────────────────────────────────
     cuesDrawer: {
       marginTop: 12,
       paddingTop: 12,
       borderTopWidth: 1,
-      borderTopColor: '#27272a',
+      borderTopColor: theme.border,
     },
     cueRow: {
       paddingBottom: 8,
       marginBottom: 8,
       borderBottomWidth: 1,
-      borderBottomColor: '#27272a40',
+      borderBottomColor: theme.border + '40',
     },
     cueLabel: {
-      color: '#71717a',
+      color: theme.textMuted,
       fontSize: 9,
       fontWeight: '800',
       letterSpacing: 0.8,
       marginBottom: 2,
     },
     cueBody: {
-      color: '#d4d4d8',
+      color: theme.textSecondary,
       fontSize: 12,
       lineHeight: 17,
     },
@@ -1608,16 +1624,18 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
       paddingTop: 6,
     },
     openCuesModalText: {
-      color: '#a1a1aa',
+      color: theme.textSecondary,
       fontSize: 11,
       fontWeight: '700',
       textDecorationLine: 'underline',
     },
+
+    // ── Set Table ───────────────────────────────────
     setTableCard: {
-      backgroundColor: '#18181b',
+      backgroundColor: theme.bgElevated,
       borderRadius: 18,
       borderWidth: 1,
-      borderColor: '#27272a',
+      borderColor: theme.borderSubtle, // ← main cards
       padding: 14,
       marginBottom: 14,
     },
@@ -1628,25 +1646,25 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
       marginBottom: 10,
     },
     tableTitle: {
-      color: '#ffffff',
+      color: theme.text,
       fontSize: 12,
       fontWeight: '900',
       letterSpacing: 1,
     },
     completedPill: {
-      backgroundColor: '#27272a',
+      backgroundColor: theme.backgroundElement,
       paddingHorizontal: 6,
       paddingVertical: 1,
       borderRadius: 6,
     },
     completedPillText: {
-      color: '#ccff00',
+      color: theme.accent,
       fontSize: 10,
       fontWeight: '800',
       fontFamily: 'monospace',
     },
     tableSubtitle: {
-      color: '#71717a',
+      color: theme.textMuted,
       fontSize: 10,
       marginTop: 2,
     },
@@ -1654,13 +1672,13 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 4,
-      backgroundColor: '#ccff00',
+      backgroundColor: theme.accent,
       paddingHorizontal: 12,
       paddingVertical: 6,
       borderRadius: 8,
     },
     addSetBtnText: {
-      color: '#09090b',
+      color: theme.background,
       fontSize: 11,
       fontWeight: '900',
     },
@@ -1669,12 +1687,12 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
       alignItems: 'center',
       paddingBottom: 6,
       borderBottomWidth: 1,
-      borderBottomColor: '#27272a',
+      borderBottomColor: theme.border,
       marginBottom: 6,
     },
     colHeader: {
       fontSize: 9,
-      color: '#71717a',
+      color: theme.textMuted,
       fontWeight: '800',
       letterSpacing: 0.8,
     },
@@ -1686,69 +1704,69 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
       borderRadius: 12,
       borderWidth: 1,
       borderColor: 'transparent',
-      backgroundColor: '#121215',
+      backgroundColor: theme.background,
     },
     setRowItemFocused: {
-      borderColor: '#ccff00',
-      backgroundColor: '#ccff000c',
+      borderColor: theme.accent,
+      backgroundColor: theme.accent + '0c',
     },
     setRowItemCompleted: {
       opacity: 0.85,
-      backgroundColor: '#12121580',
+      backgroundColor: theme.background + '80',
     },
     setNumberBadge: {
       width: 26,
       height: 26,
       borderRadius: 7,
-      backgroundColor: '#27272a',
+      backgroundColor: theme.backgroundElement,
       alignItems: 'center',
       justifyContent: 'center',
     },
     setNumberBadgeFocused: {
-      backgroundColor: '#ccff00',
+      backgroundColor: theme.accent,
     },
     setNumberBadgeCompleted: {
-      backgroundColor: '#22c55e20',
+      backgroundColor: theme.success + '20',
       borderWidth: 1,
-      borderColor: '#22c55e50',
+      borderColor: theme.success + '50',
     },
     setNumberText: {
-      color: '#a1a1aa',
+      color: theme.textSecondary,
       fontSize: 11,
       fontWeight: '800',
       fontFamily: 'monospace',
     },
     setNumberTextFocused: {
-      color: '#09090b',
+      color: theme.background,
       fontWeight: '900',
     },
     setNumberTextCompleted: {
-      color: '#22c55e',
+      color: theme.success,
     },
     previousText: {
-      color: '#a1a1aa',
+      color: theme.textSecondary,
       fontSize: 11,
       fontWeight: '700',
       fontFamily: 'monospace',
     },
     targetRirText: {
-      color: '#71717a',
+      color: theme.textMuted,
       fontSize: 10,
       marginTop: 1,
     },
     weightCellText: {
-      color: '#ffffff',
+      color: theme.text,
       fontSize: 13,
       fontWeight: '800',
       fontFamily: 'monospace',
     },
     unitSmall: {
-      color: '#71717a',
+      color: theme.textMuted,
       fontSize: 9,
       fontWeight: '600',
     },
     repsCellText: {
-      color: '#ffffff',
+      color: theme.text,
       fontSize: 13,
       fontWeight: '800',
       fontFamily: 'monospace',
@@ -1757,19 +1775,19 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
       width: 38,
       height: 38,
       borderRadius: 10,
-      backgroundColor: '#27272a',
+      backgroundColor: theme.backgroundElement,
       borderWidth: 1.5,
-      borderColor: '#3f3f46',
+      borderColor: theme.border,
       alignItems: 'center',
       justifyContent: 'center',
     },
     logSetBtnDone: {
-      backgroundColor: '#22c55e',
-      borderColor: '#22c55e',
+      backgroundColor: theme.success,
+      borderColor: theme.success,
     },
     logSetBtnJustDone: {
-      backgroundColor: '#ccff00',
-      borderColor: '#ccff00',
+      backgroundColor: theme.accent,
+      borderColor: theme.accent,
     },
     removeSetRow: {
       flexDirection: 'row',
@@ -1777,7 +1795,7 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
       paddingTop: 8,
       marginTop: 4,
       borderTopWidth: 1,
-      borderTopColor: '#27272a40',
+      borderTopColor: theme.border + '40',
     },
     removeSetBtn: {
       flexDirection: 'row',
@@ -1787,15 +1805,17 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
       paddingHorizontal: 6,
     },
     removeSetText: {
-      color: '#71717a',
+      color: theme.textMuted,
       fontSize: 11,
       fontWeight: '700',
     },
+
+    // ── Stepper Section ─────────────────────────────
     stepperSection: {
-      backgroundColor: '#18181b',
+      backgroundColor: theme.bgElevated,
       borderRadius: 20,
       borderWidth: 1,
-      borderColor: '#27272a',
+      borderColor: theme.borderSubtle, // ← main cards
       padding: 16,
       marginBottom: 14,
     },
@@ -1806,13 +1826,13 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
       marginBottom: 14,
     },
     stepperSectionTitle: {
-      color: '#ccff00',
+      color: theme.accent,
       fontSize: 11,
       fontWeight: '900',
       letterSpacing: 1,
     },
     stepperSectionSub: {
-      color: '#a1a1aa',
+      color: theme.textSecondary,
       fontSize: 11,
       marginTop: 2,
     },
@@ -1820,15 +1840,15 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 4,
-      backgroundColor: '#09090b',
+      backgroundColor: theme.background,
       borderWidth: 1,
-      borderColor: '#ccff0040',
+      borderColor: theme.accent + '40',
       paddingHorizontal: 10,
       paddingVertical: 5,
       borderRadius: 8,
     },
     plateTriggerText: {
-      color: '#ccff00',
+      color: theme.accent,
       fontSize: 11,
       fontWeight: '800',
     },
@@ -1839,10 +1859,10 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
     },
     stepperCard: {
       flex: 1,
-      backgroundColor: '#09090b',
+      backgroundColor: theme.background,
       borderRadius: 16,
       borderWidth: 1,
-      borderColor: '#27272a',
+      borderColor: theme.borderSubtle,
       padding: 12,
     },
     stepperTopLine: {
@@ -1852,7 +1872,7 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
       marginBottom: 10,
     },
     stepperCardLabel: {
-      color: '#71717a',
+      color: theme.textMuted,
       fontSize: 10,
       fontWeight: '800',
       letterSpacing: 0.8,
@@ -1863,7 +1883,7 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
       fontWeight: '700',
     },
     targetRepsTag: {
-      color: '#71717a',
+      color: theme.textMuted,
       fontSize: 10,
       fontWeight: '700',
     },
@@ -1877,15 +1897,15 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
       width: 48,
       height: 48,
       borderRadius: 14,
-      backgroundColor: '#18181b',
+      backgroundColor: theme.bgElevated,
       borderWidth: 1,
-      borderColor: '#27272a',
+      borderColor: theme.borderSubtle,
       alignItems: 'center',
       justifyContent: 'center',
     },
     chunkyBtnAdd: {
-      backgroundColor: '#ccff00',
-      borderColor: '#ccff00',
+      backgroundColor: theme.accent,
+      borderColor: theme.accent,
     },
     digitalDisplayBox: {
       alignItems: 'center',
@@ -1893,14 +1913,14 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
       minWidth: 64,
     },
     digitalReadout: {
-      color: '#ffffff',
+      color: theme.text,
       fontSize: 28,
       fontWeight: '900',
       fontFamily: 'monospace',
       letterSpacing: -0.5,
     },
     digitalUnit: {
-      color: '#71717a',
+      color: theme.textMuted,
       fontSize: 10,
       fontWeight: '800',
       textTransform: 'uppercase',
@@ -1911,23 +1931,25 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
     },
     microChip: {
       flex: 1,
-      backgroundColor: '#18181b',
+      backgroundColor: theme.bgElevated,
       borderWidth: 1,
-      borderColor: '#27272a',
+      borderColor: theme.borderSubtle,
       paddingVertical: 5,
       borderRadius: 8,
       alignItems: 'center',
       justifyContent: 'center',
     },
     microChipText: {
-      color: '#a1a1aa',
+      color: theme.textSecondary,
       fontSize: 10,
       fontWeight: '800',
       fontFamily: 'monospace',
     },
+
+    // ── RIR ─────────────────────────────────────────
     rirHeading: {
       fontSize: 10,
-      color: '#71717a',
+      color: theme.textMuted,
       fontWeight: '800',
       letterSpacing: 1,
       marginBottom: 8,
@@ -1941,49 +1963,51 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
     rirCard: {
       flex: 1,
       minWidth: '47%',
-      backgroundColor: '#09090b',
+      backgroundColor: theme.background,
       borderWidth: 1,
-      borderColor: '#27272a',
+      borderColor: theme.borderSubtle,
       borderRadius: 12,
       padding: 10,
     },
     rirCardActive: {
-      borderColor: '#ccff00',
-      backgroundColor: '#ccff0012',
+      borderColor: theme.accent,
+      backgroundColor: theme.accent + '12',
     },
     rirValText: {
-      color: '#d4d4d8',
+      color: theme.textSecondary,
       fontSize: 12,
       fontWeight: '800',
     },
     rirValTextActive: {
-      color: '#ccff00',
+      color: theme.accent,
       fontWeight: '900',
     },
     rirDescText: {
-      color: '#71717a',
+      color: theme.textMuted,
       fontSize: 10,
       marginTop: 2,
     },
     rirDescTextActive: {
-      color: '#e4e4e7',
+      color: theme.text,
     },
+
+    // ── Complete + Tools ────────────────────────────
     completeBtn: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
       gap: 8,
-      backgroundColor: '#ccff00',
+      backgroundColor: theme.accent,
       borderRadius: 14,
       paddingVertical: 15,
     },
     completeBtnDone: {
-      backgroundColor: '#27272a',
+      backgroundColor: theme.backgroundElement,
       borderWidth: 1,
-      borderColor: '#3f3f46',
+      borderColor: theme.border,
     },
     completeBtnText: {
-      color: '#09090b',
+      color: theme.background,
       fontSize: 13,
       fontWeight: '900',
     },
@@ -1993,9 +2017,9 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
     },
     toolBtn: {
       flex: 1,
-      backgroundColor: '#18181b',
+      backgroundColor: theme.bgElevated,
       borderWidth: 1,
-      borderColor: '#27272a',
+      borderColor: theme.borderSubtle,
       borderRadius: 14,
       paddingVertical: 12,
       alignItems: 'center',
@@ -2003,22 +2027,23 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
       gap: 4,
     },
     toolBtnText: {
-      color: '#d4d4d8',
+      color: theme.textSecondary,
       fontSize: 11,
       fontWeight: '700',
     },
-    // Modal Styles
+
+    // ── Modals ──────────────────────────────────────
     modalOverlay: {
       flex: 1,
       backgroundColor: '#000000a0',
       justifyContent: 'flex-end',
     },
     plateModalContainer: {
-      backgroundColor: '#18181b',
+      backgroundColor: theme.bgElevated,
       borderTopLeftRadius: 24,
       borderTopRightRadius: 24,
       borderTopWidth: 1,
-      borderColor: '#27272a',
+      borderColor: theme.border,
       padding: 18,
       maxHeight: '90%',
     },
@@ -2026,61 +2051,62 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
       margin: 20,
       borderRadius: 20,
       borderWidth: 1,
-      borderColor: '#27272a',
-      // padding: 18,
+      borderColor: theme.border,
     },
     modalHeader: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
       borderBottomWidth: 1,
-      borderBottomColor: '#27272a',
+      borderBottomColor: theme.border,
       paddingBottom: 12,
       marginBottom: 14,
     },
     modalTitle: {
-      color: '#ffffff',
+      color: theme.text,
       fontSize: 18,
       fontWeight: '900',
     },
     modalSubtitle: {
-      color: '#a1a1aa',
+      color: theme.textSecondary,
       fontSize: 11,
       marginTop: 2,
     },
     modalCloseBtn: {
       padding: 4,
     },
+
+    // Plate Calculator
     plateReadoutCard: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      backgroundColor: '#09090b',
+      backgroundColor: theme.background,
       borderRadius: 14,
       borderWidth: 1,
-      borderColor: '#27272a',
+      borderColor: theme.borderSubtle,
       padding: 14,
       marginBottom: 12,
     },
     plateReadoutLabel: {
-      color: '#71717a',
+      color: theme.textMuted,
       fontSize: 10,
       fontWeight: '800',
       letterSpacing: 0.8,
     },
     plateReadoutNumber: {
-      color: '#ffffff',
+      color: theme.text,
       fontSize: 32,
       fontWeight: '900',
       fontFamily: 'monospace',
     },
     plateReadoutUnit: {
-      color: '#ccff00',
+      color: theme.accent,
       fontSize: 14,
       fontWeight: '800',
     },
     plateReadoutSide: {
-      color: '#a1a1aa',
+      color: theme.textSecondary,
       fontSize: 11,
       fontWeight: '600',
     },
@@ -2088,36 +2114,36 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
       gap: 6,
     },
     barToggleBtn: {
-      backgroundColor: '#18181b',
+      backgroundColor: theme.bgElevated,
       borderWidth: 1,
-      borderColor: '#27272a',
+      borderColor: theme.borderSubtle,
       paddingHorizontal: 12,
       paddingVertical: 6,
       borderRadius: 8,
     },
     barToggleBtnActive: {
-      borderColor: '#ccff00',
-      backgroundColor: '#ccff0018',
+      borderColor: theme.accent,
+      backgroundColor: theme.accent + '18',
     },
     barToggleText: {
-      color: '#a1a1aa',
+      color: theme.textSecondary,
       fontSize: 11,
       fontWeight: '700',
     },
     barToggleTextActive: {
-      color: '#ccff00',
+      color: theme.accent,
       fontWeight: '800',
     },
     sleeveCard: {
-      backgroundColor: '#09090b',
+      backgroundColor: theme.background,
       borderRadius: 16,
       borderWidth: 1,
-      borderColor: '#27272a',
+      borderColor: theme.borderSubtle,
       padding: 14,
       marginBottom: 12,
     },
     sleeveLabel: {
-      color: '#71717a',
+      color: theme.textMuted,
       fontSize: 10,
       fontWeight: '800',
       letterSpacing: 0.8,
@@ -2132,9 +2158,9 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
     collarBushing: {
       width: 28,
       height: 70,
-      backgroundColor: '#27272a',
+      backgroundColor: theme.backgroundElement,
       borderWidth: 1,
-      borderColor: '#3f3f46',
+      borderColor: theme.border,
       borderRadius: 4,
       alignItems: 'center',
       justifyContent: 'center',
@@ -2149,7 +2175,7 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
     collarText: {
       position: 'absolute',
       fontSize: 7,
-      color: '#71717a',
+      color: theme.textMuted,
       fontWeight: '800',
       transform: [{ rotate: '-90deg' }],
     },
@@ -2168,9 +2194,9 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
     sleeveCap: {
       width: 32,
       height: 28,
-      backgroundColor: '#27272a',
+      backgroundColor: theme.backgroundElement,
       borderWidth: 1,
-      borderColor: '#3f3f46',
+      borderColor: theme.border,
       borderTopRightRadius: 6,
       borderBottomRightRadius: 6,
       justifyContent: 'center',
@@ -2179,7 +2205,7 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
     sleeveCapPin: {
       width: 4,
       height: 16,
-      backgroundColor: '#71717a',
+      backgroundColor: theme.textMuted,
       borderRadius: 2,
     },
     emptySleeveBox: {
@@ -2187,7 +2213,7 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
       paddingVertical: 24,
     },
     emptySleeveText: {
-      color: '#71717a',
+      color: theme.textMuted,
       fontSize: 12,
       fontStyle: 'italic',
     },
@@ -2198,20 +2224,20 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
       marginTop: 10,
     },
     breakdownChip: {
-      backgroundColor: '#18181b',
+      backgroundColor: theme.bgElevated,
       borderWidth: 1,
-      borderColor: '#27272a',
+      borderColor: theme.borderSubtle,
       paddingHorizontal: 8,
       paddingVertical: 4,
       borderRadius: 6,
     },
     breakdownChipText: {
-      color: '#d4d4d8',
+      color: theme.textSecondary,
       fontSize: 11,
       fontWeight: '700',
     },
     breakdownEmptyText: {
-      color: '#71717a',
+      color: theme.textMuted,
       fontSize: 11,
       fontStyle: 'italic',
     },
@@ -2222,24 +2248,24 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
     },
     quickAdjustBtn: {
       flex: 1,
-      backgroundColor: '#09090b',
+      backgroundColor: theme.background,
       borderWidth: 1,
-      borderColor: '#27272a',
+      borderColor: theme.borderSubtle,
       paddingVertical: 10,
       borderRadius: 10,
       alignItems: 'center',
     },
     quickAdjustBtnAdd: {
-      borderColor: '#ccff0040',
+      borderColor: theme.accent + '40',
     },
     quickAdjustText: {
-      color: '#a1a1aa',
+      color: theme.textSecondary,
       fontSize: 12,
       fontWeight: '800',
       fontFamily: 'monospace',
     },
     milestoneHeading: {
-      color: '#71717a',
+      color: theme.textMuted,
       fontSize: 10,
       fontWeight: '800',
       letterSpacing: 0.8,
@@ -2254,25 +2280,25 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
     milestoneBtn: {
       flex: 1,
       minWidth: '47%',
-      backgroundColor: '#09090b',
+      backgroundColor: theme.background,
       borderWidth: 1,
-      borderColor: '#27272a',
+      borderColor: theme.borderSubtle,
       paddingVertical: 8,
       paddingHorizontal: 10,
       borderRadius: 8,
       alignItems: 'center',
     },
     milestoneBtnActive: {
-      borderColor: '#ccff00',
-      backgroundColor: '#ccff0015',
+      borderColor: theme.accent,
+      backgroundColor: theme.accent + '15',
     },
     milestoneText: {
-      color: '#a1a1aa',
+      color: theme.textSecondary,
       fontSize: 11,
       fontWeight: '700',
     },
     milestoneTextActive: {
-      color: '#ccff00',
+      color: theme.accent,
       fontWeight: '800',
     },
     applyPlateBtn: {
@@ -2280,13 +2306,13 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
       alignItems: 'center',
       justifyContent: 'center',
       gap: 8,
-      backgroundColor: '#ccff00',
+      backgroundColor: theme.accent,
       paddingVertical: 14,
       borderRadius: 12,
       marginBottom: 8,
     },
     applyPlateBtnText: {
-      color: '#09090b',
+      color: theme.background,
       fontSize: 13,
       fontWeight: '900',
     },
@@ -2295,11 +2321,13 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
       paddingVertical: 6,
     },
     openFullScreenPlateText: {
-      color: '#71717a',
+      color: theme.textMuted,
       fontSize: 11,
       fontWeight: '600',
       textDecorationLine: 'underline',
     },
+
+    // Presets
     presetGrid: {
       flexDirection: 'row',
       flexWrap: 'wrap',
@@ -2308,25 +2336,25 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
     presetBtn: {
       flex: 1,
       minWidth: '30%',
-      backgroundColor: '#09090b',
+      backgroundColor: theme.background,
       borderWidth: 1,
-      borderColor: '#27272a',
+      borderColor: theme.borderSubtle,
       paddingVertical: 12,
       borderRadius: 10,
       alignItems: 'center',
     },
     presetBtnActive: {
-      borderColor: '#ccff00',
-      backgroundColor: '#ccff0018',
+      borderColor: theme.accent,
+      backgroundColor: theme.accent + '18',
     },
     presetBtnText: {
-      color: '#ffffff',
+      color: theme.text,
       fontSize: 13,
       fontWeight: '800',
       fontFamily: 'monospace',
     },
     presetBtnTextActive: {
-      color: '#ccff00',
+      color: theme.accent,
       fontWeight: '900',
     },
   });
