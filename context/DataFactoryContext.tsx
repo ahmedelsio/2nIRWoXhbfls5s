@@ -366,10 +366,15 @@ export const DataFactoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const mergedSet: SetRecord = { ...targetEx.sets[setIndex], ...setFields };
     const exerciseId = normalizeExerciseId(targetEx.exercise.id || targetEx.exercise.name || '');
     const currentSessionId = activeSessionIdRef.current;
+    const currentSessionName =
+      activeBriefing.workoutName?.trim() ||
+      ROUTINE_CONFIGS.push_a.displayName ||
+      'Push A (Hypertrophy)';
     setTimeout(() => {
       WorkoutRepository.logSet({
         session_id: currentSessionId,
         user_id: user.id,
+        name: currentSessionName,
         exercise_id: exerciseId,
         set_number: setIndex + 1,
         set_type: (mergedSet.type as any) || 'working',
@@ -493,11 +498,16 @@ export const DataFactoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
     if (!user?.id) return;
     const currentSessionId = activeSessionIdRef.current;
+    const currentSessionName =
+      activeBriefing.workoutName?.trim() ||
+      ROUTINE_CONFIGS.push_a.displayName ||
+      'Push A (Hypertrophy)';
     setTimeout(() => {
       for (const item of setsToPersist) {
         WorkoutRepository.logSet({
           session_id: currentSessionId,
           user_id: user.id,
+          name: currentSessionName,
           exercise_id: normalizeExerciseId(item.exerciseId),
           set_number: item.setNumber,
           set_type: (item.filled.type as any) || 'working',
@@ -608,6 +618,7 @@ export const DataFactoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
           WorkoutRepository.logSet({
             session_id: finishingSessionId,
             user_id: user.id,
+            name: sessionName,
             exercise_id: normalizedExId,
             set_number: setNumber,
             set_type: (set.type as any) || 'working',
@@ -623,6 +634,7 @@ export const DataFactoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
       }
 
       WorkoutRepository.completeSession(finishingSessionId, durationMinutes, debrief.gradeReason, {
+        name: sessionName,
         total_volume_kg: debrief.totalVolumeKg,
         total_sets_completed: debrief.setsCompleted,
         session_grade: debrief.sessionGrade,

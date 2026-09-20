@@ -25,7 +25,7 @@ import {
   Dumbbell,
   CheckCircle2
 } from 'lucide-react-native';
-import { EXERCISE_LIBRARY } from '../../src/data/mockData';
+import { EXERCISE_LIBRARY } from '@/src/data/mockData';
 
 const PRIMARY_SUBSTITUTIONS = [
   {

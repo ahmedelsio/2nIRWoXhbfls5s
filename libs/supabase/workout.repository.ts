@@ -426,7 +426,9 @@ export const WorkoutRepository = {
    * Log a new completed set.
    * Sub-16ms local persistence + offline mutation queue + background sync.
    */
-  async logSet(rawPayload: ValidatedSetInsert): Promise<WorkoutSet> {
+  async logSet(
+    rawPayload: ValidatedSetInsert & { name?: string; workoutName?: string; sessionName?: string }
+  ): Promise<WorkoutSet> {
     const validated = SetInsertSchema.parse(rawPayload);
     const setId = validated.id || generateUUID();
     const now = new Date().toISOString();
@@ -435,12 +437,42 @@ export const WorkoutRepository = {
     // Ensure session exists in LocalStore & offline queue so foreign keys stay valid
     const existingSession = LocalStore.getSessions().find((s) => s.id === validated.session_id);
     if (!existingSession) {
+      // 1. Copy name from LocalStore session if present
+      const anyLocalSessionWithValidName = LocalStore.getSessions().find(
+        (s) => s.name && s.name.trim().length > 0 && s.name.trim() !== 'Untitled session'
+      );
+      const localStoreSessionName = anyLocalSessionWithValidName?.name?.trim();
+
+      // 2. Else from the createSession that startSession already enqueued
+      const queue = LocalStore.getQueue();
+      const queuedCreateMutation = queue.find(
+        (m) =>
+          m.table === 'sessions' &&
+          (m.id === validated.session_id || (m.payload as any)?.id === validated.session_id) &&
+          typeof (m.payload as any)?.name === 'string' &&
+          (m.payload as any).name.trim().length > 0 &&
+          (m.payload as any).name.trim() !== 'Untitled session'
+      );
+      const queuedSessionName = (queuedCreateMutation?.payload as any)?.name?.trim();
+
+      // 3. Else pass name through logSet options
+      const optionName =
+        (typeof rawPayload.name === 'string' && rawPayload.name.trim().length > 0 ? rawPayload.name.trim() : null) ||
+        (typeof rawPayload.sessionName === 'string' && rawPayload.sessionName.trim().length > 0 ? rawPayload.sessionName.trim() : null) ||
+        (typeof rawPayload.workoutName === 'string' && rawPayload.workoutName.trim().length > 0 ? rawPayload.workoutName.trim() : null);
+
+      const parentSessionName =
+        localStoreSessionName ||
+        queuedSessionName ||
+        optionName ||
+        'Untitled session';
+
       const sessionRecord: WorkoutSession = {
         id: validated.session_id,
         user_id: validated.user_id,
         program_id: null,
         program_day_id: null,
-        name: (rawPayload as any).name?.trim() || 'Untitled session',
+        name: parentSessionName,
         status: 'in_progress',
         started_at: now,
         completed_at: null,
@@ -466,6 +498,15 @@ export const WorkoutRepository = {
         status: 'pending',
         retryCount: 0,
       });
+    } else if (!existingSession.name || existingSession.name.trim() === 'Untitled session') {
+      const optionName =
+        (typeof rawPayload.name === 'string' && rawPayload.name.trim().length > 0 ? rawPayload.name.trim() : null) ||
+        (typeof rawPayload.sessionName === 'string' && rawPayload.sessionName.trim().length > 0 ? rawPayload.sessionName.trim() : null) ||
+        (typeof rawPayload.workoutName === 'string' && rawPayload.workoutName.trim().length > 0 ? rawPayload.workoutName.trim() : null);
+      if (optionName) {
+        existingSession.name = optionName;
+        LocalStore.saveSession(existingSession);
+      }
     }
 
     const record: WorkoutSet = {
@@ -554,17 +595,33 @@ export const WorkoutRepository = {
   /**
    * Create a new workout session.
    */
-  async createSession(rawPayload: ValidatedSessionInsert): Promise<WorkoutSession> {
-    const validated = SessionInsertSchema.parse(rawPayload);
+  async createSession(
+    rawPayload: ValidatedSessionInsert & { workoutName?: string }
+  ): Promise<WorkoutSession> {
+    const rawIncomingName =
+      (typeof rawPayload.name === 'string' && rawPayload.name.trim().length > 0 ? rawPayload.name.trim() : null) ||
+      (typeof rawPayload.workoutName === 'string' && rawPayload.workoutName.trim().length > 0 ? rawPayload.workoutName.trim() : null);
+
+    const payloadWithSanitizedName = {
+      ...rawPayload,
+      name: rawIncomingName || rawPayload.name || undefined,
+    };
+
+    const validated = SessionInsertSchema.parse(payloadWithSanitizedName);
     const sessionId = validated.id || generateUUID();
     const now = new Date().toISOString();
+    const sessionName =
+      rawIncomingName ||
+      (validated.name && validated.name.trim().length > 0 && validated.name.trim() !== 'Untitled session'
+        ? validated.name.trim()
+        : 'Untitled session');
 
     const session: WorkoutSession = {
       id: sessionId,
       user_id: validated.user_id,
       program_id: validated.program_id ?? null,
       program_day_id: validated.program_day_id ?? null,
-      name: validated.name?.trim() || (rawPayload as any).name?.trim() || 'Untitled session',
+      name: sessionName,
       status: validated.status,
       started_at: validated.started_at || now,
       completed_at: null,
@@ -608,6 +665,9 @@ export const WorkoutRepository = {
     durationMinutes: number,
     notes?: string,
     extra?: {
+      name?: string;
+      workoutName?: string;
+      sessionName?: string;
       total_volume_kg?: number;
       total_sets_completed?: number;
       session_grade?: string;
@@ -617,7 +677,24 @@ export const WorkoutRepository = {
     const sessions = LocalStore.getSessions();
     const session = sessions.find((s) => s.id === sessionId);
 
+    // 4. completeSession UPDATE must set name again from the known sessionName / LocalStore session.name
+    const queue = LocalStore.getQueue();
+    const queuedCreate = queue.find(
+      (m) => m.table === 'sessions' && (m.id === sessionId || (m.payload as any)?.id === sessionId)
+    );
+    const queuedName = (queuedCreate?.payload as any)?.name;
+
+    const resolvedName =
+      (extra?.name && extra.name.trim().length > 0 ? extra.name.trim() : null) ||
+      (extra?.workoutName && extra.workoutName.trim().length > 0 ? extra.workoutName.trim() : null) ||
+      (extra?.sessionName && extra.sessionName.trim().length > 0 ? extra.sessionName.trim() : null) ||
+      (session?.name && session.name.trim().length > 0 && session.name.trim() !== 'Untitled session' ? session.name.trim() : null) ||
+      (queuedName && queuedName.trim().length > 0 && queuedName.trim() !== 'Untitled session' ? queuedName.trim() : null) ||
+      (session?.name && session.name.trim().length > 0 ? session.name.trim() : null) ||
+      'Untitled session';
+
     const remoteUpdateFields = {
+      name: resolvedName,
       status: 'completed' as const,
       completed_at: now,
       duration_minutes: durationMinutes,
@@ -632,6 +709,7 @@ export const WorkoutRepository = {
       const completed: WorkoutSession = {
         ...session,
         ...remoteUpdateFields,
+        name: resolvedName,
         total_tonnage_kg: extra?.total_volume_kg != null ? Number((extra.total_volume_kg / 1000).toFixed(2)) : (session?.total_tonnage_kg ?? 0),
       };
       LocalStore.saveSession(completed);

@@ -37,10 +37,26 @@ function mapToSessionGrade(grade?: string | null): string | null {
  */
 function sanitizeSessionPayload(raw: any, authUserId?: string | null): Record<string, any> {
   const userId = authUserId || raw.user_id;
+
+  // 1. If incoming name is non-empty after trim, KEEP IT. Only use "Untitled session" when name is missing/blank.
+  const rawName = typeof raw.name === 'string' ? raw.name.trim() : (raw.name ? String(raw.name).trim() : '');
+  let resolvedName = rawName.length > 0 ? rawName : '';
+
+  if (!resolvedName && raw.id) {
+    const localSess = LocalStore.getSessions().find((s) => s.id === raw.id);
+    if (localSess?.name && localSess.name.trim().length > 0 && localSess.name.trim() !== 'Untitled session') {
+      resolvedName = localSess.name.trim();
+    }
+  }
+
+  if (!resolvedName) {
+    resolvedName = 'Untitled session';
+  }
+
   const clean: Record<string, any> = {
     id: raw.id,
     user_id: userId,
-    name: raw.name?.trim() || 'Untitled session',
+    name: resolvedName,
     status: raw.status || 'in_progress',
     started_at: raw.started_at || new Date().toISOString(),
     duration_minutes: raw.duration_minutes ?? (raw.duration_seconds ? Math.round(raw.duration_seconds / 60) : 0),
