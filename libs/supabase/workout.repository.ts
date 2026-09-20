@@ -586,6 +586,65 @@ export const WorkoutRepository = {
   },
 
   /**
+   * Get the latest completed session today for a user (local timezone with UTC fallback).
+   */
+  async getLatestCompletedSessionToday(userId: string): Promise<WorkoutSession | null> {
+    const isTodayLocalOrUtc = (dateStr: string | null | undefined): boolean => {
+      if (!dateStr) return false;
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return false;
+      const now = new Date();
+      const isLocal =
+        d.getFullYear() === now.getFullYear() &&
+        d.getMonth() === now.getMonth() &&
+        d.getDate() === now.getDate();
+      if (isLocal) return true;
+      const isUtc =
+        d.getUTCFullYear() === now.getUTCFullYear() &&
+        d.getUTCMonth() === now.getUTCMonth() &&
+        d.getUTCDate() === now.getUTCDate();
+      return isUtc;
+    };
+
+    if (isSupabaseConfigured && onlineManager.isOnline()) {
+      try {
+        const { data, error } = await supabase
+          .from('sessions')
+          .select('*')
+          .eq('user_id', userId)
+          .eq('status', 'completed')
+          .order('completed_at', { ascending: false })
+          .limit(10);
+
+        if (!error && data && data.length > 0) {
+          const sessionsList = data as unknown as WorkoutSession[];
+          sessionsList.forEach((s) => LocalStore.saveSession(s));
+          const sorted = [...sessionsList].sort((a, b) => {
+            const timeA = new Date(a.completed_at || a.started_at || 0).getTime();
+            const timeB = new Date(b.completed_at || b.started_at || 0).getTime();
+            return timeB - timeA;
+          });
+          const match = sorted.find((s) => isTodayLocalOrUtc(s.completed_at || s.started_at));
+          if (match) return match;
+        }
+      } catch (err) {
+        console.warn('[WorkoutRepository.getLatestCompletedSessionToday] Fallback to local:', err);
+      }
+    }
+
+    const local = LocalStore.getSessions()
+      .filter((s) => s.user_id === userId && s.status === 'completed')
+      .sort((a, b) => {
+        const timeA = new Date(a.completed_at || a.started_at || 0).getTime();
+        const timeB = new Date(b.completed_at || b.started_at || 0).getTime();
+        return timeB - timeA;
+      });
+
+    const localMatch = local.find((s) => isTodayLocalOrUtc(s.completed_at || s.started_at));
+    return localMatch || null;
+  },
+
+  /**
    * Get session muscle volume aggregates.
    */
   async getSessionMuscleVolume(sessionId: string) {

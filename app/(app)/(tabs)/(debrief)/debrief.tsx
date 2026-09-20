@@ -10,7 +10,8 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-  Share
+  Share,
+  ActivityIndicator,
 } from 'react-native';
 import { router, Stack } from 'expo-router';
 import * as Haptics from 'expo-haptics';
@@ -40,7 +41,28 @@ export default function NightDebriefScreen() {
   const insets = useSafeAreaInsets();
   const styles = createStyles(theme);
   const [copied, setCopied] = useState(false);
-  const { activeDebrief, isDebriefFromLiveSession, liveStats } = useDataFactory();
+  const { activeDebrief, isDebriefFromLiveSession, liveStats, isDebriefLoading } = useDataFactory();
+
+  if (isDebriefLoading) {
+    return (
+      <>
+        <Stack.Screen options={{
+          header: () => (
+            <View style={[styles.topBar, { paddingTop: insets.top }]}>
+              <MaskedGlassBG />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.topBarLabel}>SESSION RECAP</Text>
+                <Text style={styles.topBarTitle}>Night Debrief</Text>
+              </View>
+            </View>
+          ),
+        }} />
+        <View style={[styles.emptyContainer, { justifyContent: 'center', alignItems: 'center' }]}>
+          <ActivityIndicator size="large" color={theme.accent} />
+        </View>
+      </>
+    );
+  }
 
   if (!isDebriefFromLiveSession) {
     return (

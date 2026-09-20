@@ -12,6 +12,8 @@ import {
   LIFTER_PERSONAS,
   calculateSessionStats,
   generateDebriefFromSession,
+  calculate1RM,
+  getTomorrowRoutinePreview,
 } from '../data/dataFactory';
 import { MOCK_NIGHT_DEBRIEF } from '../data/mockData';
 import { PULL_A_SESSION, LEGS_A_SESSION, CROWDED_PUSH_EXERCISES } from '../data/routinesData';
@@ -110,6 +112,7 @@ interface DataFactoryContextType {
   latestDebrief: NightDebriefData | null;
   activeDebrief: NightDebriefData;
   isDebriefFromLiveSession: boolean;
+  isDebriefLoading: boolean;
   isMobilityActive: boolean;
   sqliteSyncStatus: 'synced' | 'syncing' | 'queued';
   liveStats: {
@@ -208,8 +211,133 @@ export const DataFactoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
     baseLifter.knownPRs
   );
   const [latestDebrief, setLatestDebrief] = useState<NightDebriefData | null>(null);
+  const [isDebriefLoading, setIsDebriefLoading] = useState<boolean>(() => Boolean(user?.id));
   const [isMobilityActive, setMobilityActive] = useState<boolean>(false);
   const [sqliteSyncStatus, setSqliteSyncStatus] = useState<'synced' | 'syncing' | 'queued'>('synced');
+
+  // Hydrate debrief from today's completed session on mount/auth
+  useEffect(() => {
+    if (!user?.id) {
+      setIsDebriefLoading(false);
+      return;
+    }
+
+    const currentUserId = user.id;
+    let isMounted = true;
+    setIsDebriefLoading(true);
+
+    async function hydrateTodayDebrief() {
+      try {
+        // 1. Load the latest sessions row for that user with status = 'completed' whose completed_at (else started_at) is today
+        const session = await WorkoutRepository.getLatestCompletedSessionToday(currentUserId);
+        if (!isMounted) return;
+
+        if (!session) {
+          // If no completed session today: leave latestDebrief null (empty state)
+          setIsDebriefLoading(false);
+          return;
+        }
+
+        // 2. Load session_muscle_volume & 3. Load user_training_streak & sets
+        const [muscleRows, streakRow, sessionSets] = await Promise.all([
+          WorkoutRepository.getSessionMuscleVolume(session.id),
+          WorkoutRepository.getUserTrainingStreak(currentUserId),
+          WorkoutRepository.getSessionSets(session.id).catch(() => []),
+        ]);
+
+        if (!isMounted) return;
+
+        // Build PR list from sessionSets if available
+        let prs: NightDebriefData['prs'] = [];
+        if (sessionSets && sessionSets.length > 0) {
+          const completedSets = sessionSets.filter((s: any) => s.is_completed);
+          const bestByEx: Record<string, { weightKg: number; reps: number; e1RM: number; exName: string }> = {};
+          for (const s of completedSets) {
+            const w = Number(s.weight_kg) || 0;
+            const r = Number(s.reps) || 0;
+            if (w > 0 && r > 0) {
+              const e1 = calculate1RM(w, r);
+              const exId = s.exercise_id || 'ex';
+              if (!bestByEx[exId] || e1 > bestByEx[exId].e1RM) {
+                bestByEx[exId] = {
+                  weightKg: w,
+                  reps: r,
+                  e1RM: e1,
+                  exName: (s as any).exercise_name || exId,
+                };
+              }
+            }
+          }
+
+          try {
+            const { EXERCISE_LIBRARY } = await import('../data/mockData');
+            const libMap = new Map(EXERCISE_LIBRARY.map((e) => [e.id, e.name]));
+            for (const [id, val] of Object.entries(bestByEx)) {
+              const resolvedName = libMap.get(id);
+              if (resolvedName) val.exName = resolvedName;
+            }
+          } catch {}
+
+          prs = Object.values(bestByEx).slice(0, 3).map((item) => ({
+            exerciseName: item.exName.length > 30 ? 'Top Exercise' : item.exName,
+            metric: 'Estimated 1RM PR',
+            value: `${item.weightKg}kg × ${item.reps} reps`,
+            previousBest: `${Math.round(item.e1RM * 0.95)}kg e1RM`,
+            estimated1RM: item.e1RM,
+          }));
+        }
+
+        const formatGrade = (g?: string | null): string => {
+          if (!g) return 'A';
+          const norm = g.trim();
+          if (norm === 'A_plus' || norm === 'A_PLUS') return 'A+';
+          if (norm === 'B_plus' || norm === 'B_PLUS') return 'B+';
+          return norm;
+        };
+
+        const completedTime = session.completed_at
+          ? new Date(session.completed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' Today'
+          : 'Today';
+
+        // 4. Build NightDebriefData
+        const debriefData: NightDebriefData = {
+          workoutName: session.name || 'Workout Session',
+          completedAt: completedTime,
+          durationMinutes: session.duration_minutes || (session.duration_seconds ? Math.round(session.duration_seconds / 60) : 52),
+          totalVolumeKg: Math.round(session.total_volume_kg || session.total_tonnage_kg || 0),
+          setsCompleted: session.total_sets_completed || 0,
+          sessionGrade: formatGrade(session.session_grade),
+          gradeReason: session.grade_reason || session.notes || 'Completed all prescribed volume according to periodization wave.',
+          prs,
+          volumeByMuscle: (muscleRows || []).map((r) => ({
+            muscle: r.primary_muscle,
+            sets: r.set_count,
+            volumeKg: Math.round(r.volume_kg),
+            status: 'Logged',
+          })),
+          currentStreakDays: streakRow?.current_streak_days ?? 1,
+          longestStreakDays: streakRow?.longest_streak_days ?? 1,
+          lastCompletedOn: streakRow?.last_completed_on ?? null,
+          tomorrowPreview: getTomorrowRoutinePreview(session.name),
+        };
+
+        // 5. setLatestDebrief(that). isDebriefFromLiveSession stays true whenever latestDebrief is set.
+        setLatestDebrief((prev) => prev || debriefData);
+      } catch (err) {
+        console.warn('[DataFactoryContext] Error hydrating today debrief:', err);
+      } finally {
+        if (isMounted) {
+          setIsDebriefLoading(false);
+        }
+      }
+    }
+
+    hydrateTodayDebrief();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.id]);
 
   useEffect(() => {
     setActivePersona(dynamicPersona);
@@ -595,6 +723,7 @@ export const DataFactoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
         latestDebrief,
         activeDebrief,
         isDebriefFromLiveSession,
+        isDebriefLoading,
         isMobilityActive,
         sqliteSyncStatus,
         liveStats,
