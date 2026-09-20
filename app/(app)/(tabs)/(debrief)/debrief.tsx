@@ -291,7 +291,7 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
     topBarTitle: {
       fontSize: 20,
       color: theme.text,
-      fontWeight: '900',
+      fontWeight: '700',
       marginTop: 2,
     },
     header: {
@@ -572,7 +572,7 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
       justifyContent: 'center',
       alignItems: 'center',
       paddingHorizontal: 32,
-      backgroundColor: theme.background,
+      // backgroundColor: theme.background,
     },
     emptyText: {
       color: theme.textSecondary,

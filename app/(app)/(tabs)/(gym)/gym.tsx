@@ -439,7 +439,7 @@ export default function GymModeScreen() {
             </View>
           ),
         }} />
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, backgroundColor: '#09090b' }}>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
           {finished ? (
             <>
               <Text style={{ color: '#fff', fontSize: 20, fontWeight: '800', marginBottom: 8 }}>
@@ -1370,7 +1370,7 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
   return createThemeStyles(theme, {
     container: {
       flex: 1,
-      backgroundColor: theme.background,
+      // backgroundColor: theme.background,
     },
     topBar: {
       flexDirection: 'row',
@@ -1383,13 +1383,13 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
     subtext: {
       fontSize: 10,
       color: theme.accent,
-      fontWeight: '900',
+      fontWeight: '700',
       letterSpacing: 1,
     },
     workoutTitle: {
       fontSize: 20,
       color: theme.text,
-      fontWeight: '900',
+      fontWeight: '700',
       marginTop: 2,
     },
     finishBtn: {

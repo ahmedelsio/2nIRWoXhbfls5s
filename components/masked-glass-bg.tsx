@@ -20,7 +20,7 @@ const MaskedGlassBG = ({ style, isMasked = true }: MaskedGlassBGProps) => {
       maskElement={isMasked ? (
         <LinearGradient
           colors={['black', 'transparent']}
-          start={{ x: 0, y: 0 }}
+          start={{ x: 0, y: 0.6 }}
           end={{ x: 0, y: 1 }}
           style={StyleSheet.absoluteFill}
         />

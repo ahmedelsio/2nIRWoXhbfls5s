@@ -50,6 +50,8 @@ import {
   getRoutineSession,
 } from '@/src/data/programCatalog';
 import { PrimaryCard } from '@/src/components/UIElements';
+import BottomSheetWrapper from '@/src/components/BottomSheetWrapper';
+import { BottomSheetModal } from '@expo/ui/community/bottom-sheet';
 
 export default function TodayScreen() {
   const theme = useTheme();
@@ -58,8 +60,9 @@ export default function TodayScreen() {
   const { user, profile, isAuthenticated } = useAuth();
   const { loadCustomRoutine, setMobilityActive } = useDataFactory();
   const [activeRoutine, setActiveRoutine] = useState<RoutineType>('push_a');
-  const [showScheduleModal, setShowScheduleModal] = useState(false);
-  const [showBlockModal, setShowBlockModal] = useState(false);
+
+  const scheduleSheetRef = React.useRef<BottomSheetModal>(null);
+  const blockModalRef = React.useRef<BottomSheetModal>(null);
 
   const current = ROUTINE_CONFIGS[activeRoutine];
 
@@ -133,7 +136,7 @@ export default function TodayScreen() {
                   style={styles.changeBtn}
                   onPress={() => {
                     Haptics.selectionAsync();
-                    setShowScheduleModal(true);
+                    scheduleSheetRef.current?.expand()
                   }}
                 >
                   <RotateCcw size={12} color={theme.accent} />
@@ -151,7 +154,7 @@ export default function TodayScreen() {
           <TouchableOpacity
             onPress={() => {
               Haptics.selectionAsync();
-              setShowBlockModal(true);
+              blockModalRef.current?.expand()
             }}
             activeOpacity={0.8}
           >
@@ -299,34 +302,17 @@ export default function TodayScreen() {
       </ScrollView>
 
       {/* SCHEDULE MANAGER MODAL (Change Today's Session) */}
-      <Modal visible={showScheduleModal} presentationStyle='formSheet' allowSwipeDismissal animationType='slide' onRequestClose={() => setShowScheduleModal(false)}>
-        <View style={styles.modalContent}>
-          <View style={[styles.modalHeader, { zIndex: 9 }]}>
+      <BottomSheetWrapper ref={scheduleSheetRef} key="schedule-manager-sheet">
+        <View style={{ flex: 1 }}>
+          <View style={styles.modalHeader}>
             <MaskedGlassBG />
             <View>
               <Text style={styles.modalTitle}>Weekly Schedule & Routine</Text>
               <Text style={styles.modalSub}>Select which session to load for today's brief</Text>
             </View>
-            <TouchableOpacity
-              style={{
-                width: 34,
-                height: 34,
-                borderRadius: 17,
-                backgroundColor: '#18181b',
-                borderWidth: 1,
-                borderColor: '#27272a',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-              onPress={() => setShowScheduleModal(false)}
-              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-              activeOpacity={0.8}
-            >
-              <X size={20} color="#a1a1aa" />
-            </TouchableOpacity>
           </View>
 
-          <ScrollView style={{ flex: 1, overflow: 'visible' }} contentContainerStyle={{ paddingHorizontal: Spacing.three }} showsVerticalScrollIndicator={false}>
+          <ScrollView style={{ flex: 1, overflow: "visible", paddingHorizontal: Spacing.three }}>
             {(Object.keys(ROUTINE_CONFIGS) as RoutineType[]).map((key) => {
               const conf = ROUTINE_CONFIGS[key];
               const isSelected = activeRoutine === key;
@@ -337,7 +323,6 @@ export default function TodayScreen() {
                   onPress={() => {
                     Haptics.selectionAsync();
                     commitRoutine(key);
-                    setShowScheduleModal(false);
                   }}
                   activeOpacity={0.8}
                 >
@@ -358,41 +343,24 @@ export default function TodayScreen() {
           <View style={{ paddingHorizontal: Spacing.three }}>
             <TouchableOpacity
               style={styles.modalCloseBtn}
-              onPress={() => setShowScheduleModal(false)}
+              onPress={() => { }}
               activeOpacity={0.8}
             >
               <Text style={styles.modalCloseBtnText}>Close Schedule</Text>
             </TouchableOpacity>
           </View>
-
         </View>
-      </Modal>
+      </BottomSheetWrapper>
 
-      {/* BLOCK PROGRESS INSPECTION MODAL */}
-      <Modal visible={showBlockModal} presentationStyle='formSheet' allowSwipeDismissal animationType='slide' onRequestClose={() => setShowBlockModal(false)}>
-        <View style={styles.modalContent}>
+      {/* BLOCK PROGRESS INSPECTION MODAL blockModalRef */}
+      <BottomSheetWrapper ref={blockModalRef} dynamicHeight key="block-sheet">
+        <View style={{ flex: 1 }}>
           <View style={styles.modalHeader}>
+            <MaskedGlassBG />
             <View>
               <Text style={styles.modalTitle}>Block Periodization Status</Text>
               <Text style={styles.modalSub}>Evidence-based mesocycle progression wave</Text>
             </View>
-            <TouchableOpacity
-              style={{
-                width: 34,
-                height: 34,
-                borderRadius: 17,
-                backgroundColor: '#18181b',
-                borderWidth: 1,
-                borderColor: '#27272a',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-              onPress={() => setShowBlockModal(false)}
-              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-              activeOpacity={0.8}
-            >
-              <X size={20} color="#a1a1aa" />
-            </TouchableOpacity>
           </View>
 
           <View style={[styles.blockDetailBox, { gap: Spacing.two, paddingHorizontal: Spacing.three }]}>
@@ -435,14 +403,14 @@ export default function TodayScreen() {
           <View style={{ paddingHorizontal: Spacing.three }}>
             <TouchableOpacity
               style={styles.modalCloseBtn}
-              onPress={() => setShowBlockModal(false)}
+              onPress={() => blockModalRef.current?.dismiss()}
               activeOpacity={0.8}
             >
               <Text style={styles.modalCloseBtnText}>Done</Text>
             </TouchableOpacity>
           </View>
         </View>
-      </Modal>
+      </BottomSheetWrapper>
     </>
   );
 }
@@ -453,7 +421,7 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
   return createThemeStyles(theme, {
     container: {
       flex: 1,
-      backgroundColor: theme.background,
+      backgroundColor: theme.accent,
     },
     scrollContent: {
       paddingTop: 16,
@@ -498,7 +466,7 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
     headlineTitle: {
       fontSize: 24,
       color: theme.text,
-      fontWeight: '900',
+      fontWeight: '700',
       letterSpacing: -0.5,
     },
     accentText: {
@@ -810,21 +778,20 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
     },
     modalContent: {
       flex: 1,
-      backgroundColor: theme.bgElevated,
-      paddingBottom: insets.bottom / 2
+      // paddingBottom: insets.bottom / 2
     },
     modalHeader: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      marginBottom: 16,
-      paddingHorizontal: Spacing.three,
-      paddingVertical: Spacing.four
+      // marginBottom: 16,
+      paddingVertical: Spacing.four,
+      paddingHorizontal: Spacing.three, zIndex: 9
     },
     modalTitle: {
       color: theme.text,
       fontSize: 18,
-      fontWeight: '900',
+      fontWeight: '700',
     },
     modalSub: {
       color: '#a1a1aa',
