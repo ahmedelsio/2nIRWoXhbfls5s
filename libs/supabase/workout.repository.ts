@@ -584,4 +584,20 @@ export const WorkoutRepository = {
 
     return local;
   },
+
+  /**
+   * Get session muscle volume aggregates.
+   */
+  async getSessionMuscleVolume(sessionId: string) {
+    const { StatsRepository } = await import('./stats.repository');
+    return StatsRepository.getSessionMuscleVolume(sessionId);
+  },
+
+  /**
+   * Get user training streak aggregates.
+   */
+  async getUserTrainingStreak(userId: string) {
+    const { StatsRepository } = await import('./stats.repository');
+    return StatsRepository.getUserTrainingStreak(userId);
+  },
 };

@@ -85,6 +85,7 @@ export default function NightDebriefScreen() {
     tonnageKg: debrief.totalVolumeKg,
     setsCompleted: debrief.setsCompleted,
     durationMinutes: debrief.durationMinutes,
+    currentStreakDays: debrief.currentStreakDays ?? 1,
     prs: (debrief.prs || []).map((p) => ({
       exercise: p.exerciseName,
       metric: p.metric,
@@ -93,16 +94,14 @@ export default function NightDebriefScreen() {
         ? `Surpassed previous best (${p.previousBest}). e1RM: ${p.estimated1RM}kg.`
         : `Calculated via Brzycki formula. e1RM: ${p.estimated1RM}kg.`,
     })),
-    volumeByMuscle: [
-      { muscle: 'Chest (Pecs)', sets: Math.max(1, Math.round(debrief.setsCompleted * 0.4)), status: 'Optimal (MEV Met)' },
-      { muscle: 'Shoulders (Delts)', sets: Math.max(1, Math.round(debrief.setsCompleted * 0.3)), status: 'Optimal' },
-      { muscle: 'Triceps & Accessories', sets: Math.max(1, Math.round(debrief.setsCompleted * 0.3)), status: 'Direct Target' },
-    ],
+    volumeByMuscle: debrief.volumeByMuscle && debrief.volumeByMuscle.length > 0
+      ? debrief.volumeByMuscle
+      : [],
     tomorrow: {
-      name: debrief.tomorrowPreview?.title || 'Pull A (Back & Biceps)',
+      name: debrief.tomorrowPreview?.title || 'Pull A (Lat & Posterior Bias)',
       type: debrief.tomorrowPreview?.type === 'workout' ? 'Training Day' : 'Rest Day',
       timing: 'Tomorrow • 07:00 AM',
-      description: debrief.tomorrowPreview?.description || 'Lats & posterior chain volume. Focus on driving elbows down into the hip crease.',
+      description: debrief.tomorrowPreview?.description || 'Back and posterior chain focus. Focus on initiating with elbows into hip pockets.',
       sleepTarget: '8.0 Hours Recommended',
     },
   };
@@ -211,15 +210,29 @@ export default function NightDebriefScreen() {
         </View>
 
         <View style={styles.landmarksCard}>
-          {sessionData.volumeByMuscle.map((item, idx) => (
-            <View key={idx} style={styles.landmarkRow}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.landmarkMuscle}>{item.muscle}</Text>
-                <Text style={styles.landmarkStatus}>{item.status}</Text>
+          {sessionData.volumeByMuscle.length > 0 ? (
+            sessionData.volumeByMuscle.map((item, idx) => (
+              <View key={idx} style={styles.landmarkRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.landmarkMuscle}>{item.muscle}</Text>
+                  <Text style={styles.landmarkStatus}>
+                    {item.volumeKg != null && item.volumeKg > 0
+                      ? `${item.volumeKg.toLocaleString()} kg • ${item.status}`
+                      : item.status}
+                  </Text>
+                </View>
+                <Text style={styles.landmarkSets}>{item.sets} Sets</Text>
               </View>
-              <Text style={styles.landmarkSets}>{item.sets} Sets</Text>
+            ))
+          ) : (
+            <View style={styles.landmarkRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.landmarkMuscle}>No logged sets</Text>
+                <Text style={styles.landmarkStatus}>Complete sets in Gym Mode</Text>
+              </View>
+              <Text style={styles.landmarkSets}>0 Sets</Text>
             </View>
-          ))}
+          )}
         </View>
 
         {/* Tomorrow Preview Card */}
@@ -257,7 +270,7 @@ export default function NightDebriefScreen() {
         <View style={styles.streakFooter}>
           <Flame size={14} color="#f97316" />
           <Text style={styles.streakText}>
-            14-Day Consistency Streak. Rest days and deloads protect your streak.
+            {`${sessionData.currentStreakDays}-Day Consistency Streak. Rest days and deloads protect your streak.`}
           </Text>
         </View>
       </ScrollView>

@@ -7,6 +7,49 @@ import {
 } from '../types';
 import { EXERCISE_LIBRARY } from './mockData';
 import { PULL_EXERCISES, LEGS_EXERCISES } from './routinesData';
+import { ROUTINE_CONFIGS } from './programCatalog';
+
+declare module '../types' {
+  interface NightDebriefData {
+    volumeByMuscle?: {
+      muscle: string;
+      sets: number;
+      volumeKg: number;
+      status: string;
+    }[];
+    currentStreakDays?: number;
+    lastCompletedOn?: string | null;
+    longestStreakDays?: number;
+  }
+}
+
+export function getTomorrowRoutinePreview(
+  currentKeyOrName?: string
+): { title: string; type: 'rest' | 'workout'; description: string } {
+  const norm = (currentKeyOrName || '').toLowerCase();
+  let nextKey = 'pull_a';
+
+  if (norm.includes('crowded') || norm === 'crowded_push') {
+    nextKey = 'pull_a';
+  } else if (norm.includes('push') || norm === 'push_a') {
+    nextKey = 'pull_a';
+  } else if (norm.includes('pull') || norm === 'pull_a') {
+    nextKey = 'legs_a';
+  } else if (norm.includes('leg') || norm.includes('lower') || norm.includes('squat') || norm === 'legs_a') {
+    nextKey = 'push_a';
+  } else if (norm.includes('mobility') || norm.includes('recovery') || norm === 'mobility') {
+    nextKey = 'push_a';
+  } else {
+    nextKey = 'pull_a';
+  }
+
+  const config = (ROUTINE_CONFIGS as Record<string, any>)[nextKey] || ROUTINE_CONFIGS.pull_a;
+  return {
+    title: config.displayName,
+    type: nextKey === 'mobility' ? 'rest' : 'workout',
+    description: config.brief,
+  };
+}
 
 // 1. Calculation Functions for Real-Time Strength Science
 export const calculate1RM = (weightKg: number, reps: number): number => {
@@ -61,7 +104,10 @@ export const generateDebriefFromSession = (
   workout: WorkoutExercise[],
   durationMinutes: number,
   knownPRs: Record<string, { weightKg: number; reps: number; e1RM: number; date: string }>,
-  tomorrowPreviewOverride?: { title: string; type: 'rest' | 'workout'; description: string }
+  tomorrowPreviewOverride?: { title: string; type: 'rest' | 'workout'; description: string },
+  history?: HistoricalWorkout[],
+  currentStreakDays?: number,
+  lastCompletedOn?: string | null
 ): { debrief: NightDebriefData; newPRs: Record<string, { weightKg: number; reps: number; e1RM: number; date: string }> } => {
   const stats = calculateSessionStats(workout);
   const detectedPRs: NightDebriefData['prs'] = [];
@@ -117,6 +163,77 @@ export const generateDebriefFromSession = (
     gradeReason = `Exceptional overload! Hit ${detectedPRs.length} new Personal Record${detectedPRs.length > 1 ? 's' : ''} while respecting target RIR ${stats.avgRir}.`;
   }
 
+  // Calculate volume grouped by primary muscle from completed sets only
+  const muscleGroups: Record<string, { sets: number; volumeKg: number }> = {};
+  workout.forEach(item => {
+    const rawMuscle =
+      (item.exercise as any).primaryMuscle ||
+      (item.exercise as any).primary_muscle ||
+      item.exercise.targetMuscle ||
+      (item.exercise as any).muscle ||
+      'Other';
+
+    let muscle = rawMuscle;
+    const lower = rawMuscle.toLowerCase();
+    if (lower.includes('chest') || lower.includes('pectoral')) muscle = 'Chest';
+    else if (lower.includes('lat') || lower.includes('back')) muscle = 'Back';
+    else if (lower.includes('shoulder') || lower.includes('delt')) muscle = 'Shoulders';
+    else if (lower.includes('quad')) muscle = 'Quadriceps';
+    else if (lower.includes('hamstring') || lower.includes('glute')) muscle = 'Hamstrings & Glutes';
+    else if (lower.includes('tricep')) muscle = 'Triceps';
+    else if (lower.includes('bicep')) muscle = 'Biceps';
+    else if (lower.includes('arm')) muscle = 'Arms';
+
+    item.sets.forEach(set => {
+      if (set.completed) {
+        if (!muscleGroups[muscle]) {
+          muscleGroups[muscle] = { sets: 0, volumeKg: 0 };
+        }
+        muscleGroups[muscle].sets += 1;
+        muscleGroups[muscle].volumeKg += (set.weightKg || 0) * (set.reps || 0);
+      }
+    });
+  });
+
+  const volumeByMuscle: { muscle: string; sets: number; volumeKg: number; status: string }[] =
+    Object.entries(muscleGroups).map(([muscle, data]) => ({
+      muscle,
+      sets: data.sets,
+      volumeKg: Math.round(data.volumeKg),
+      status: 'Logged',
+    }));
+
+  // Consecutive day streak calculation
+  const todayStr = new Date().toISOString().split('T')[0];
+  let streakDays = currentStreakDays != null ? currentStreakDays : 1;
+
+  if (currentStreakDays == null && history && history.length > 0) {
+    const sessionDates = new Set<string>();
+    sessionDates.add(todayStr);
+
+    for (const h of history) {
+      if (h.date) {
+        const match = h.date.match(/\d{4}-\d{2}-\d{2}/);
+        if (match) {
+          sessionDates.add(match[0]);
+        }
+      }
+    }
+
+    let checkDate = new Date();
+    let count = 0;
+    while (true) {
+      const checkStr = checkDate.toISOString().split('T')[0];
+      if (sessionDates.has(checkStr)) {
+        count++;
+        checkDate = new Date(checkDate.getTime() - 86400000);
+      } else {
+        break;
+      }
+    }
+    streakDays = Math.max(1, count);
+  }
+
   const debrief: NightDebriefData = {
     workoutName,
     completedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' Today',
@@ -126,11 +243,10 @@ export const generateDebriefFromSession = (
     sessionGrade,
     gradeReason,
     prs: detectedPRs,
-    tomorrowPreview: tomorrowPreviewOverride || {
-      title: 'Active Recovery & Mobility Flow',
-      type: 'rest',
-      description: 'Scheduled intelligent rest. 8,000 steps target + 10-minute thoracic spine & hip flow. Your streak is protected.',
-    },
+    volumeByMuscle,
+    currentStreakDays: streakDays,
+    lastCompletedOn: lastCompletedOn || todayStr,
+    tomorrowPreview: tomorrowPreviewOverride || getTomorrowRoutinePreview(workoutName),
   };
 
   return { debrief, newPRs: updatedPRs };

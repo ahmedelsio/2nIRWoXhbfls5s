@@ -426,7 +426,9 @@ export const DataFactoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
       activeBriefing.workoutName,
       activeWorkout,
       durationMinutes,
-      knownPRs
+      knownPRs,
+      undefined,
+      history
     );
 
     setLatestDebrief(debrief);
@@ -484,6 +486,34 @@ export const DataFactoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
         total_volume_kg: debrief.totalVolumeKg,
         total_sets_completed: debrief.setsCompleted,
         session_grade: debrief.sessionGrade,
+      }).then(async () => {
+        try {
+          const [muscleRows, streakRow] = await Promise.all([
+            WorkoutRepository.getSessionMuscleVolume(finishingSessionId),
+            WorkoutRepository.getUserTrainingStreak(user.id),
+          ]);
+
+          setLatestDebrief((prev) => {
+            if (!prev) return prev;
+            const updated = { ...prev };
+            if (muscleRows && muscleRows.length > 0) {
+              updated.volumeByMuscle = muscleRows.map((r) => ({
+                muscle: r.primary_muscle,
+                sets: r.set_count,
+                volumeKg: Math.round(r.volume_kg),
+                status: 'Logged',
+              }));
+            }
+            if (streakRow) {
+              updated.currentStreakDays = streakRow.current_streak_days;
+              updated.lastCompletedOn = streakRow.last_completed_on;
+              updated.longestStreakDays = streakRow.longest_streak_days;
+            }
+            return updated;
+          });
+        } catch (err) {
+          console.warn('[DataFactory] Error fetching debrief metrics views:', err);
+        }
       }).catch((err) => {
         console.warn('[DataFactory] Error completing session:', err);
       });
