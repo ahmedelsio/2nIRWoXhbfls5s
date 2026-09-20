@@ -18,8 +18,9 @@ import {
 import { MOCK_NIGHT_DEBRIEF } from '../data/mockData';
 import { PULL_A_SESSION, LEGS_A_SESSION, CROWDED_PUSH_EXERCISES } from '../data/routinesData';
 import { useAuth } from './AuthContext';
-import { WorkoutRepository, normalizeExerciseId } from '../libs/supabase/workout.repository';
+import { WorkoutRepository, normalizeExerciseId, resolveExerciseName } from '../libs/supabase/workout.repository';
 import { LocalStore } from '../libs/offline/storage';
+import { ROUTINE_CONFIGS } from '../data/programCatalog';
 
 export const getPersonaDefaultDebrief = (persona: LifterPersona): NightDebriefData => {
   if (persona.id === 'sarah') {
@@ -238,53 +239,48 @@ export const DataFactoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
           return;
         }
 
-        // 2. Load session_muscle_volume & 3. Load user_training_streak & sets
-        const [muscleRows, streakRow, sessionSets] = await Promise.all([
+        // 2. Load session_muscle_volume & 3. Load user_training_streak & sets & PRs
+        const [muscleRows, streakRow, sessionSets, sessionPRs] = await Promise.all([
           WorkoutRepository.getSessionMuscleVolume(session.id),
           WorkoutRepository.getUserTrainingStreak(currentUserId),
           WorkoutRepository.getSessionSets(session.id).catch(() => []),
+          WorkoutRepository.getSessionPRs(session.id, currentUserId).catch(() => []),
         ]);
 
         if (!isMounted) return;
 
-        // Build PR list from sessionSets if available
-        let prs: NightDebriefData['prs'] = [];
+        // Build PR list ONLY for sets where set.is_pr === true OR matching row in public.prs
+        const prs: NightDebriefData['prs'] = [];
+        const seenExercises = new Set<string>();
+
         if (sessionSets && sessionSets.length > 0) {
-          const completedSets = sessionSets.filter((s: any) => s.is_completed);
-          const bestByEx: Record<string, { weightKg: number; reps: number; e1RM: number; exName: string }> = {};
-          for (const s of completedSets) {
-            const w = Number(s.weight_kg) || 0;
-            const r = Number(s.reps) || 0;
-            if (w > 0 && r > 0) {
-              const e1 = calculate1RM(w, r);
-              const exId = s.exercise_id || 'ex';
-              if (!bestByEx[exId] || e1 > bestByEx[exId].e1RM) {
-                bestByEx[exId] = {
-                  weightKg: w,
-                  reps: r,
-                  e1RM: e1,
-                  exName: (s as any).exercise_name || exId,
-                };
-              }
-            }
+          for (const s of sessionSets) {
+            if (!s.is_completed) continue;
+
+            const matchingPR = sessionPRs.find(
+              (pr: any) => pr.set_id === s.id || pr.exercise_id === s.exercise_id
+            );
+
+            const isPR = Boolean(s.is_pr === true || matchingPR != null);
+            if (!isPR) continue;
+
+            const resolvedName = (s as any).exercise_name || resolveExerciseName(s.exercise_id);
+            if (seenExercises.has(resolvedName)) continue;
+            seenExercises.add(resolvedName);
+
+            const w = Number(s.weight_kg) || Number(matchingPR?.value) || 0;
+            const r = Number(s.reps) || Number(matchingPR?.reps_at_weight) || 0;
+            const e1 = calculate1RM(w, r);
+            const prevBest = matchingPR?.previous_value ? `${matchingPR.previous_value}kg` : undefined;
+
+            prs.push({
+              exerciseName: resolvedName,
+              metric: matchingPR?.pr_type === 'rep_pr' ? 'Rep PR' : 'Estimated 1RM PR',
+              value: `${w}kg × ${r} reps`,
+              previousBest: prevBest || `${Math.round(e1 * 0.95)}kg e1RM`,
+              estimated1RM: e1,
+            });
           }
-
-          try {
-            const { EXERCISE_LIBRARY } = await import('../data/mockData');
-            const libMap = new Map(EXERCISE_LIBRARY.map((e) => [e.id, e.name]));
-            for (const [id, val] of Object.entries(bestByEx)) {
-              const resolvedName = libMap.get(id);
-              if (resolvedName) val.exName = resolvedName;
-            }
-          } catch {}
-
-          prs = Object.values(bestByEx).slice(0, 3).map((item) => ({
-            exerciseName: item.exName.length > 30 ? 'Top Exercise' : item.exName,
-            metric: 'Estimated 1RM PR',
-            value: `${item.weightKg}kg × ${item.reps} reps`,
-            previousBest: `${Math.round(item.e1RM * 0.95)}kg e1RM`,
-            estimated1RM: item.e1RM,
-          }));
         }
 
         const formatGrade = (g?: string | null): string => {
@@ -301,7 +297,7 @@ export const DataFactoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
         // 4. Build NightDebriefData
         const debriefData: NightDebriefData = {
-          workoutName: session.name || 'Workout Session',
+          workoutName: session.name?.trim() || ROUTINE_CONFIGS.push_a.displayName,
           completedAt: completedTime,
           durationMinutes: session.duration_minutes || (session.duration_seconds ? Math.round(session.duration_seconds / 60) : 52),
           totalVolumeKg: Math.round(session.total_volume_kg || session.total_tonnage_kg || 0),
@@ -518,12 +514,23 @@ export const DataFactoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
   };
 
   const startSession = (workout: WorkoutExercise[], briefing: MorningBriefingData) => {
+    const sessionName =
+      briefing.workoutName?.trim() ||
+      ROUTINE_CONFIGS.push_a.displayName ||
+      activeBriefing.workoutName?.trim() ||
+      'Push A (Hypertrophy)';
+
+    const safeBriefing: MorningBriefingData = {
+      ...briefing,
+      workoutName: sessionName,
+    };
+
     const clonedWorkout: WorkoutExercise[] = JSON.parse(JSON.stringify(workout));
     clonedWorkout.forEach((item) => {
       item.sets = item.sets.map((s) => ({ ...s, completed: false }));
     });
     setActiveWorkout(clonedWorkout);
-    setActiveBriefing(briefing);
+    setActiveBriefing(safeBriefing);
     setLatestDebrief(null);
 
     const newSessionId = generateSessionId();
@@ -535,7 +542,7 @@ export const DataFactoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
     WorkoutRepository.createSession({
       id: newSessionId,
       user_id: user.id,
-      name: briefing.workoutName,
+      name: sessionName,
       status: 'in_progress',
       started_at: new Date().toISOString(),
       is_timeboxed: false,
@@ -550,8 +557,13 @@ export const DataFactoryProvider: React.FC<{ children: React.ReactNode }> = ({ c
   };
 
   const finishActiveWorkout = (durationMinutes: number = 54): NightDebriefData => {
+    const sessionName =
+      activeBriefing.workoutName?.trim() ||
+      ROUTINE_CONFIGS.push_a.displayName ||
+      'Push A (Hypertrophy)';
+
     const { debrief, newPRs } = generateDebriefFromSession(
-      activeBriefing.workoutName,
+      sessionName,
       activeWorkout,
       durationMinutes,
       knownPRs,

@@ -234,6 +234,64 @@ export function normalizeExerciseId(rawId: string): string {
   return '00000000-0000-0000-0000-000000000002';
 }
 
+export const SEEDED_EXERCISE_NAMES: Record<string, string> = {
+  '00000000-0000-0000-0000-000000000001': 'Barbell Back Squat',
+  '00000000-0000-0000-0000-000000000002': 'Barbell Flat Bench Press',
+  '00000000-0000-0000-0000-000000000003': 'Barbell Conventional Deadlift',
+  '00000000-0000-0000-0000-000000000004': 'Standing Overhead Press',
+  '00000000-0000-0000-0000-000000000005': 'Barbell Bent-Over Row',
+  '00000000-0000-0000-0000-000000000006': 'Romanian Deadlift',
+  '00000000-0000-0000-0000-000000000007': 'Pull-Up',
+  '00000000-0000-0000-0000-000000000008': 'Incline Dumbbell Press',
+  '00000000-0000-0000-0000-000000000009': 'Cable Lateral Raise',
+  '00000000-0000-0000-0000-000000000010': 'Cable Tricep Pushdown',
+  '00000000-0000-0000-0000-000000000011': '45-Degree Leg Press',
+  '00000000-0000-0000-0000-000000000012': 'Standing Calf Raise',
+  '00000000-0000-0000-0000-000000000013': 'Barbell Front Squat',
+  '00000000-0000-0000-0000-000000000014': 'Trap-Bar Deadlift',
+  '00000000-0000-0000-0000-000000000015': 'Incline Barbell Bench Press',
+  '00000000-0000-0000-0000-000000000016': 'Dumbbell Flat Press',
+  '00000000-0000-0000-0000-000000000017': 'Push-Up',
+  '00000000-0000-0000-0000-000000000018': 'Chest-Supported Row',
+  '00000000-0000-0000-0000-000000000019': 'Seated Cable Row',
+  '00000000-0000-0000-0000-000000000020': 'Lat Pulldown',
+  '00000000-0000-0000-0000-000000000021': 'Cable Face Pull',
+  '00000000-0000-0000-0000-000000000022': 'Dumbbell Lateral Raise',
+  '00000000-0000-0000-0000-000000000023': 'Rear Delt Fly',
+  '00000000-0000-0000-0000-000000000024': 'Overhead Cable Triceps Extension',
+  '00000000-0000-0000-0000-000000000025': 'Barbell Skull Crusher',
+  '00000000-0000-0000-0000-000000000026': 'Incline Dumbbell Curl',
+  '00000000-0000-0000-0000-000000000027': 'Dumbbell Hammer Curl',
+  '00000000-0000-0000-0000-000000000028': 'Bulgarian Split Squat',
+  '00000000-0000-0000-0000-000000000029': 'Seated Leg Curl',
+  '00000000-0000-0000-0000-000000000030': 'Leg Extension',
+  '00000000-0000-0000-0000-000000000031': 'Dumbbell Walking Lunge',
+  '00000000-0000-0000-0000-000000000032': 'Incline DB Crush Press',
+  '00000000-0000-0000-0000-000000000033': 'Overhead DB Triceps Ext',
+  '00000000-0000-0000-0000-000000000034': '90/90 Hip Flow',
+  '00000000-0000-0000-0000-000000000035': 'Thoracic Spine Foam Roller Opener',
+  '00000000-0000-0000-0000-000000000036': 'Couch Stretch',
+  '00000000-0000-0000-0000-000000000037': 'Banded Ankle Mobilization',
+};
+
+export function resolveExerciseName(rawIdOrSlug: string): string {
+  if (!rawIdOrSlug) return 'Exercise';
+  if (SEEDED_EXERCISE_NAMES[rawIdOrSlug]) {
+    return SEEDED_EXERCISE_NAMES[rawIdOrSlug];
+  }
+  const normalizedId = normalizeExerciseId(rawIdOrSlug);
+  if (SEEDED_EXERCISE_NAMES[normalizedId]) {
+    return SEEDED_EXERCISE_NAMES[normalizedId];
+  }
+  if (!/^[0-9a-f-]{36}$/i.test(rawIdOrSlug)) {
+    return rawIdOrSlug
+      .split('-')
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(' ');
+  }
+  return 'Exercise';
+}
+
 function generateUUID(): string {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
     return crypto.randomUUID();
@@ -289,29 +347,79 @@ export const WorkoutRepository = {
   },
 
   /**
-   * Fetch all sets for a given session.
+   * Fetch all sets for a given session with resolved exercise names.
    */
-  async getSessionSets(sessionId: string): Promise<WorkoutSet[]> {
+  async getSessionSets(sessionId: string): Promise<(WorkoutSet & { exercise_name?: string })[]> {
     const localSets = LocalStore.getSets(sessionId);
 
     if (isSupabaseConfigured && onlineManager.isOnline()) {
       try {
         const { data, error } = await supabase
           .from('sets')
-          .select('*')
+          .select('*, exercises(name, slug)')
           .eq('session_id', sessionId)
           .order('set_number', { ascending: true });
 
         if (!error && data && data.length > 0) {
-          data.forEach((s) => LocalStore.saveSet(s));
-          return data;
+          return (data as any[]).map((s) => {
+            LocalStore.saveSet(s);
+            const joinedName = s.exercises?.name || (Array.isArray(s.exercises) ? s.exercises[0]?.name : null);
+            const resolvedName = joinedName || resolveExerciseName(s.exercise_id);
+            return {
+              ...s,
+              exercise_name: resolvedName,
+            };
+          });
         }
       } catch (err) {
         console.warn('[WorkoutRepository.getSessionSets] Falling back to local cache:', err);
       }
     }
 
-    return localSets;
+    return localSets.map((s) => ({
+      ...s,
+      exercise_name: resolveExerciseName(s.exercise_id),
+    }));
+  },
+
+  /**
+   * Fetch PRs associated with a session or its sets/exercises for a user.
+   */
+  async getSessionPRs(sessionId: string, userId: string): Promise<any[]> {
+    if (isSupabaseConfigured && onlineManager.isOnline()) {
+      try {
+        const localSets = LocalStore.getSets(sessionId);
+        const setIds = localSets.map((s) => s.id).filter(Boolean);
+
+        if (setIds.length > 0) {
+          const { data, error } = await supabase
+            .from('prs')
+            .select('*, exercises(name, slug)')
+            .eq('user_id', userId)
+            .in('set_id', setIds);
+
+          if (!error && data && data.length > 0) {
+            return data;
+          }
+        }
+
+        const exerciseIds = Array.from(new Set(localSets.map((s) => s.exercise_id).filter(Boolean)));
+        if (exerciseIds.length > 0) {
+          const { data, error } = await supabase
+            .from('prs')
+            .select('*, exercises(name, slug)')
+            .eq('user_id', userId)
+            .in('exercise_id', exerciseIds);
+
+          if (!error && data) {
+            return data;
+          }
+        }
+      } catch (err) {
+        console.warn('[WorkoutRepository.getSessionPRs] Failed to fetch PRs:', err);
+      }
+    }
+    return [];
   },
 
   /**

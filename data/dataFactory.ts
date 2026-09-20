@@ -113,37 +113,39 @@ export const generateDebriefFromSession = (
   const detectedPRs: NightDebriefData['prs'] = [];
   const updatedPRs = { ...knownPRs };
 
-  workout.forEach(item => {
+  for (const item of workout) {
     const exerciseName = item.exercise.name;
     const previous = knownPRs[exerciseName] || { weightKg: 0, reps: 0, e1RM: 0, date: '' };
 
-    let bestSet = { weightKg: 0, reps: 0, e1RM: 0 };
-    item.sets.forEach(set => {
-      if (set.completed) {
+    let bestPRSet: { weightKg: number; reps: number; e1RM: number } | null = null;
+    for (const set of item.sets) {
+      const isSetPR = Boolean((set as any).is_pr === true || (set as any).isPr === true);
+      if (set.completed && isSetPR) {
         const e1RM = calculate1RM(set.weightKg, set.reps);
-        if (e1RM > bestSet.e1RM) {
-          bestSet = { weightKg: set.weightKg, reps: set.reps, e1RM };
+        if (!bestPRSet || e1RM > bestPRSet.e1RM) {
+          bestPRSet = { weightKg: set.weightKg, reps: set.reps, e1RM };
         }
       }
-    });
+    }
 
-    if (bestSet.e1RM > previous.e1RM && bestSet.e1RM > 0) {
+    if (bestPRSet !== null) {
+      const prRecord: { weightKg: number; reps: number; e1RM: number } = bestPRSet;
       detectedPRs.push({
         exerciseName,
-        metric: previous.e1RM > 0 ? 'Estimated 1RM PR' : 'First Baseline Calibration PR',
-        value: `${bestSet.weightKg}kg × ${bestSet.reps} reps`,
-        previousBest: previous.e1RM > 0 ? `${previous.e1RM}kg e1RM` : 'None (Baseline)',
-        estimated1RM: bestSet.e1RM,
+        metric: 'Estimated 1RM PR',
+        value: `${prRecord.weightKg}kg × ${prRecord.reps} reps`,
+        previousBest: previous.e1RM > 0 ? `${previous.e1RM}kg e1RM` : 'None',
+        estimated1RM: prRecord.e1RM,
       });
 
       updatedPRs[exerciseName] = {
-        weightKg: bestSet.weightKg,
-        reps: bestSet.reps,
-        e1RM: bestSet.e1RM,
+        weightKg: prRecord.weightKg,
+        reps: prRecord.reps,
+        e1RM: prRecord.e1RM,
         date: new Date().toISOString().split('T')[0],
       };
     }
-  });
+  }
 
   // Calculate session grade
   let sessionGrade = 'A';
