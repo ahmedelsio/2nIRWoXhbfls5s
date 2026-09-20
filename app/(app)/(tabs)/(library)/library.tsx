@@ -3,7 +3,7 @@
  * Path: app/(tabs)/library.tsx
  * 800+ exercise library with muscle targeting, equipment filters & biomechanical cues
  */
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -31,132 +31,91 @@ import { useTheme } from '@/src/hooks/use-theme';
 import { createThemeStyles } from '@/src/utils/themeStyles';
 import MaskedGlassBG from '@/src/components/masked-glass-bg';
 import { Spacing } from '@/src/constants/theme';
+import { ExerciseRepository, FALLBACK_EXERCISES, type Exercise } from '@/src/libs/supabase/exercise.repository';
 
 interface ExerciseItem {
   id: string;
   name: string;
   muscle: string;
-  equipment: 'Barbell' | 'Dumbbell' | 'Cable' | 'Machine' | 'Bodyweight';
-  difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
+  equipment: string;
+  difficulty: string;
   setup: string;
   execution: string;
   mistakes: string;
   femaleNote: string;
 }
 
-const EXTENDED_LIBRARY: ExerciseItem[] = [
-  {
-    id: 'bench',
-    name: 'Barbell Bench Press',
-    muscle: 'Chest',
-    equipment: 'Barbell',
-    difficulty: 'Intermediate',
-    setup: 'Retract scapulae firmly into the bench to form a solid shelf. Plant feet flat directly under knees.',
-    execution: 'Lower bar under control (2s) to lower sternum with elbows tucked at 45–60°. Press upward in a slight J-curve.',
-    mistakes: 'Flaring elbows wide at 90° or bouncing the barbell off ribs.',
-    femaleNote: 'Narrower shoulder-width grip is recommended to optimize wrist-elbow stacking.',
-  },
-  {
-    id: 'incline-db',
-    name: 'Incline Dumbbell Press',
-    muscle: 'Chest',
-    equipment: 'Dumbbell',
-    difficulty: 'Beginner',
-    setup: 'Set bench to 30° incline. Kick weights up with knees and set feet wide and rooted.',
-    execution: 'Press dumbbells up in a gentle converging arc without clacking the weights together.',
-    mistakes: 'Excessive lower back hyperextension.',
-    femaleNote: 'Maintain moderate bench angle (30°) to prioritize upper pec fibers over anterior delts.',
-  },
-  {
-    id: 'squat',
-    name: 'Barbell Back Squat',
-    muscle: 'Legs',
-    equipment: 'Barbell',
-    difficulty: 'Advanced',
-    setup: 'Position bar across upper traps (high bar) or rear delts. Root tripod foot firmly.',
-    execution: 'Break simultaneously at hips and knees. Descend to parallel depth, then drive floor away.',
-    mistakes: 'Knee cave (valgus collapse) on ascent.',
-    femaleNote: 'Wider pelvis often benefits from a slightly wider stance with toes flared 25–35°.',
-  },
-  {
-    id: 'rdl',
-    name: 'Romanian Deadlift (RDL)',
-    muscle: 'Hamstrings',
-    equipment: 'Barbell',
-    difficulty: 'Intermediate',
-    setup: 'Slight soft knee bend, tall chest, lats packed tight.',
-    execution: 'Push hips backward toward wall behind you until hamstrings reach peak stretch. Squeeze glutes to stand.',
-    mistakes: 'Squatting the weight down rather than hinging hips posteriorly.',
-    femaleNote: 'Excellent for glute-hamstring tie-in with zero axial compressive overload on lumbar spine.',
-  },
-  {
-    id: 'deadlift',
-    name: 'Conventional Deadlift',
-    muscle: 'Back',
-    equipment: 'Barbell',
-    difficulty: 'Advanced',
-    setup: 'Bar directly over mid-foot. Pull slack out of the barbell until clicking noise is heard.',
-    execution: 'Drive floor away with quads until bar crosses knees, then thrust hips forward to lock glutes.',
-    mistakes: 'Rounding thoracic and lumbar spine or yanking the bar abruptly.',
-    femaleNote: 'If grip strength fatigues before posterior chain, switch to hook grip or chalk.',
-  },
-  {
-    id: 'lat-pulldown',
-    name: 'Neutral Grip Lat Pulldown',
-    muscle: 'Back',
-    equipment: 'Cable',
-    difficulty: 'Beginner',
-    setup: 'Adjust thigh pads snugly. Grasp handles with thumbs wrapped.',
-    execution: 'Drive elbows down into your hip pockets. Squeeze lats at the bottom for a 1-second pause.',
-    mistakes: 'Leaning backward 45° and pulling with momentum.',
-    femaleNote: 'Neutral grip is easier on wrist joint alignment and maximally targets iliac lat fibers.',
-  },
-  {
-    id: 'lat-raise',
-    name: 'Cable Lateral Raise',
-    muscle: 'Shoulders',
-    equipment: 'Cable',
-    difficulty: 'Beginner',
-    setup: 'Set pulley height to wrist level. Stand tall with core braced.',
-    execution: 'Sweep arms wide in scapular plane (30° forward). Lead with elbows.',
-    mistakes: 'Shrugging upper traps to cheat the load.',
-    femaleNote: 'Cables provide constant tension in the lengthened position where deltoid stimulus peaks.',
-  },
-  {
-    id: 'triceps-ext',
-    name: 'Overhead Cable Triceps Extension',
-    muscle: 'Arms',
-    equipment: 'Cable',
-    difficulty: 'Beginner',
-    setup: 'Step forward from cable tower with rope held overhead.',
-    execution: 'Keep elbows tucked. Extend forearms forward until triceps fully contract.',
-    mistakes: 'Allowing elbows to flare wide or swinging torso.',
-    femaleNote: 'Overhead angle places the long head of the triceps in a maximally stretched position.',
-  },
-  {
-    id: 'calf-raise',
-    name: 'Standing Calf Raise',
-    muscle: 'Calves',
-    equipment: 'Machine',
-    difficulty: 'Beginner',
-    setup: 'Place balls of feet on block, balls under hips, shoulders under pads.',
-    execution: 'Lower to full ankle dorsiflexion. Hold bottom stretch 2 seconds to defeat elastic reflex.',
-    mistakes: 'Bouncing up and down rapidly using Achilles elasticity.',
-    femaleNote: 'Pause at the bottom is critical for true muscular hypertrophy over passive tendon bounce.',
-  },
-];
+function mapExerciseRow(row: Exercise): ExerciseItem {
+  let mistakes = '';
+  if (Array.isArray(row.common_mistakes)) {
+    mistakes = row.common_mistakes.join('. ');
+  } else if (typeof row.common_mistakes === 'string') {
+    try {
+      const parsed = JSON.parse(row.common_mistakes);
+      mistakes = Array.isArray(parsed) ? parsed.join('. ') : row.common_mistakes;
+    } catch {
+      mistakes = row.common_mistakes;
+    }
+  } else if (row.common_mistakes) {
+    mistakes = String(row.common_mistakes);
+  }
 
-const MUSCLE_FILTERS = ['All', 'Chest', 'Back', 'Shoulders', 'Legs', 'Hamstrings', 'Arms', 'Calves'];
+  const formatCapitalize = (str: string) => {
+    if (!str) return '';
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  };
+
+  return {
+    id: row.id,
+    name: row.name,
+    muscle: row.primary_muscle,
+    equipment: formatCapitalize(row.equipment_category || ''),
+    difficulty: formatCapitalize(row.difficulty || ''),
+    setup: row.setup_cue || '',
+    execution: row.execution_cue || '',
+    mistakes,
+    femaleNote: row.female_consideration || '',
+  };
+}
 
 export default function LibraryScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const styles = createStyles(theme);
+  const [exercises, setExercises] = useState<ExerciseItem[]>(() =>
+    FALLBACK_EXERCISES.map(mapExerciseRow)
+  );
   const [search, setSearch] = useState('');
   const [selectedMuscle, setSelectedMuscle] = useState('All');
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const filtered = EXTENDED_LIBRARY.filter((e) => {
+  useEffect(() => {
+    let isMounted = true;
+    async function loadExercises() {
+      try {
+        const rows = await ExerciseRepository.list();
+        if (isMounted && rows && rows.length > 0) {
+          setExercises(rows.map(mapExerciseRow));
+        }
+      } catch (err) {
+        console.warn('[LibraryScreen] Error loading exercises, using fallback:', err);
+        if (isMounted) {
+          setExercises(FALLBACK_EXERCISES.map(mapExerciseRow));
+        }
+      }
+    }
+    loadExercises();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const muscleFilters = useMemo(() => {
+    const unique = Array.from(new Set(exercises.map((e) => e.muscle).filter(Boolean)));
+    return ['All', ...unique];
+  }, [exercises]);
+
+  const filtered = exercises.filter((e) => {
     const matchSearch = e.name.toLowerCase().includes(search.toLowerCase()) ||
       e.muscle.toLowerCase().includes(search.toLowerCase()) ||
       e.equipment.toLowerCase().includes(search.toLowerCase());
@@ -203,7 +162,7 @@ export default function LibraryScreen() {
 
           {/* Muscle Filter Pills */}
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.filterScroll, { paddingHorizontal: Spacing.two }]}>
-            {MUSCLE_FILTERS.map((m) => {
+            {muscleFilters.map((m) => {
               const active = selectedMuscle === m;
               return (
                 <TouchableOpacity
@@ -223,7 +182,12 @@ export default function LibraryScreen() {
         </View>
 
         <View style={{ paddingHorizontal: Spacing.two, gap: Spacing.two }}>
-          {filtered.map((item) => {
+          {filtered.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>No exercises loaded.</Text>
+            </View>
+          ) : (
+            filtered.map((item) => {
             const isExpanded = expandedId === item.id;
             return (
               <TouchableOpacity
@@ -299,7 +263,7 @@ export default function LibraryScreen() {
                 )}
               </TouchableOpacity>
             );
-          })}
+          }))}
         </View>
       </ScrollView>
     </>
@@ -487,6 +451,16 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
       color: theme.accent,
       fontSize: 12,
       fontWeight: '800',
+    },
+    emptyContainer: {
+      paddingVertical: 48,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    emptyText: {
+      color: theme.textSecondary,
+      fontSize: 14,
+      fontWeight: '600',
     },
   });
 }
