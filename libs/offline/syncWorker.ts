@@ -40,7 +40,7 @@ function sanitizeSessionPayload(raw: any, authUserId?: string | null): Record<st
   const clean: Record<string, any> = {
     id: raw.id,
     user_id: userId,
-    name: raw.name || 'Gym Workout Session',
+    name: raw.name?.trim() || 'Untitled session',
     status: raw.status || 'in_progress',
     started_at: raw.started_at || new Date().toISOString(),
     duration_minutes: raw.duration_minutes ?? (raw.duration_seconds ? Math.round(raw.duration_seconds / 60) : 0),

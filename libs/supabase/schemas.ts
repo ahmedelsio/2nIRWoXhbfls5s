@@ -37,7 +37,7 @@ export const SessionInsertSchema = z.object({
   user_id: z.string().min(1),
   program_id: z.string().min(1).nullable().optional(),
   program_day_id: z.string().min(1).nullable().optional(),
-  name: z.string().min(1).max(120),
+  name: z.string().max(120).optional().default('Untitled session'),
   status: z.enum(['in_progress', 'completed', 'abandoned', 'active_rest']).default('in_progress'),
   started_at: z.string().datetime().optional(),
   ended_at: z.string().datetime().nullable().optional(),
